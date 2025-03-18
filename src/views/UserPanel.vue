@@ -1,11 +1,24 @@
 <script setup lang="ts">
-import { NLayout, NLayoutContent, NLayoutSider, NMenu } from 'naive-ui'
-import { h, ref } from 'vue'
+import { NLayout, NLayoutContent, NLayoutSider, NMenu, NAvatar, NDropdown, NSpace } from 'naive-ui'
+import { h, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import type { MenuOption } from 'naive-ui'
-import { StatsChartOutline, SwapHorizontalOutline, CartOutline, PersonOutline, InformationCircleOutline } from '@vicons/ionicons5'
+import type { MenuOption, DropdownOption } from 'naive-ui'
+import { StatsChartOutline, SwapHorizontalOutline, CartOutline, InformationCircleOutline } from '@vicons/ionicons5'
 
 const router = useRouter()
+
+const userInfo = ref({
+  email: 'user@example.com',
+  nickname: '用户123',
+  avatar: 'https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg'
+})
+
+onMounted(() => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    router.push('/login')
+  }
+})
 
 const menuOptions: MenuOption[] = [
   {
@@ -24,16 +37,31 @@ const menuOptions: MenuOption[] = [
     icon: () => h(CartOutline)
   },
   {
-    label: '个人中心',
-    key: '/user/profile',
-    icon: () => h(PersonOutline)
-  },
-  {
     label: '关于',
     key: '/user/about',
     icon: () => h(InformationCircleOutline)
   }
 ]
+
+const dropdownOptions: DropdownOption[] = [
+  {
+    label: '个人中心',
+    key: 'profile'
+  },
+  {
+    label: '退出登录',
+    key: 'logout'
+  }
+]
+
+const handleSelect = (key: string) => {
+  if (key === 'profile') {
+    router.push('/user/profile')
+  } else if (key === 'logout') {
+    localStorage.removeItem('token')
+    router.push('/login')
+  }
+}
 
 const activeKey = ref('/user/dashboard')
 
@@ -45,7 +73,21 @@ const handleUpdateValue = (key: string) => {
 <template>
   <NLayout style="width: 100%; height: 100%;" has-sider>
     <NLayoutSider bordered collapse-mode="width" :collapsed-width="64" :width="240" show-trigger>
-      <NMenu v-model:value="activeKey" :options="menuOptions" :collapsed-width="64" :collapsed-icon-size="22" @update:value="handleUpdateValue" />
+      <div class="sider-content">
+        <NMenu v-model:value="activeKey" :options="menuOptions" :collapsed-width="64" :collapsed-icon-size="22" @update:value="handleUpdateValue" />
+        <div class="user-profile">
+          <NDropdown :options="dropdownOptions" @select="handleSelect">
+            <NSpace align="center">
+              <NAvatar
+                round
+                :size="32"
+                :src="userInfo.avatar"
+              />
+              <span class="username">{{ userInfo.nickname }}</span>
+            </NSpace>
+          </NDropdown>
+        </div>
+      </div>
     </NLayoutSider>
     <NLayout>
       <NLayoutContent content-style="padding: 24px;">
@@ -56,12 +98,21 @@ const handleUpdateValue = (key: string) => {
 </template>
 
 <style scoped>
-.user-panel {
-  padding: 24px;
+.sider-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.user-panel h1 {
-  font-size: 24px;
-  margin-bottom: 24px;
+.user-profile {
+  margin-top: auto;
+  padding: 16px;
+  border-top: 1px solid var(--n-border-color);
+  cursor: pointer;
+}
+
+.username {
+  font-size: 14px;
+  color: var(--n-text-color);
 }
 </style>

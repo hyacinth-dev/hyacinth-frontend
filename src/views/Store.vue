@@ -41,7 +41,9 @@ const products = ref([
           <ul class="product-features">
             <li v-for="feature in product.features" :key="feature">{{ feature }}</li>
           </ul>
-          <NButton type="primary" block>立即购买</NButton>
+          <template #footer>
+            <NButton type="primary" block>立即购买</NButton>
+          </template>
         </NCard>
       </NGridItem>
     </NGrid>

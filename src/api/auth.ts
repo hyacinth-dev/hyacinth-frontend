@@ -21,10 +21,10 @@ export function register(data: LoginParams) {
 
 // 获取用户信息
 export function getUserInfo() {
-  return request.get('/auth/user')
+  return request.get('/user')
 }
 
 // 退出登录
 export function logout() {
-  return request.post('/auth/logout')
+  return request.post('/logout')
 }

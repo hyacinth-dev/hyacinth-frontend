@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { NCard, NGrid, NGridItem, NStatistic, NSpace, NRadioGroup, NRadio, NDataTable } from 'naive-ui'
-import { ref } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
+import { getUsage, UsageData } from '../api/service'
 
 use([
-  CanvasRenderer,
-  LineChart,
-  GridComponent,
-  TooltipComponent,
-  LegendComponent
+	CanvasRenderer,
+	LineChart,
+	GridComponent,
+	TooltipComponent,
+	LegendComponent
 ])
 
 const stats = [
@@ -22,16 +23,8 @@ const stats = [
 	{ label: '账户余额', value: '￥100.00' }
 ]
 
-const timeRange = ref('7d')
-const trafficData = ref([
-	{ date: '2024-09', value: 0 },
-	{ date: '2024-10', value: 1.9 },
-	{ date: '2024-11', value: 3.5 },
-	{ date: '2024-12', value: 0.3 },
-	{ date: '2025-01', value: 0 },
-	{ date: '2025-02', value: 0 },
-	{ date: '2025-03', value: 0 }
-])
+const timeRange = ref('')
+let trafficData: { date: string, value: number }[] = []
 
 const columns = [
 	{ title: '时间', key: 'date' },
@@ -39,47 +32,67 @@ const columns = [
 ]
 
 const chartOption = ref({
-  tooltip: {
-    trigger: 'axis',
-    axisPointer: {
-      type: 'cross',
-      label: {
-        backgroundColor: '#6a7985'
-      }
-    }
-  },
-  grid: {
-    left: '3%',
-    right: '4%',
-    bottom: '3%',
-    containLabel: true
-  },
-  xAxis: {
-    type: 'category',
-    boundaryGap: false,
-    data: trafficData.value.map(item => item.date)
-  },
-  yAxis: {
-    type: 'value',
-    name: 'GiB'
-  },
-  series: [
-    {
-      name: '流量',
-      type: 'line',
-      data: trafficData.value.map(item => item.value),
-      smooth: true,
-      showSymbol: false,
-      itemStyle: {
-        color: '#18a058'
-      },
-      areaStyle: {
-        color: '#18a058',
-        opacity: 0.1
-      }
-    }
-  ]
+	tooltip: {
+		trigger: 'axis',
+		axisPointer: {
+			type: 'cross',
+			label: {
+				backgroundColor: '#6a7985'
+			}
+		}
+	},
+	grid: {
+		left: '3%',
+		right: '4%',
+		bottom: '3%',
+		containLabel: true
+	},
+	xAxis: {
+		type: 'category',
+		boundaryGap: false,
+		data: [] as string[],
+	},
+	yAxis: {
+		type: 'value',
+		name: 'GiB'
+	},
+	series: [
+		{
+			name: '流量',
+			type: 'line',
+			data: [] as number[],
+			smooth: true,
+			showSymbol: false,
+			itemStyle: {
+				color: '#18a058'
+			},
+			areaStyle: {
+				color: '#18a058',
+				opacity: 0.1
+			}
+		}
+	]
 })
+
+const updateChart = () => {
+	chartOption.value.xAxis.data = trafficData.map(item => item.date)
+	chartOption.value.series[0].data = trafficData.map(item => item.value)
+}
+
+watch(timeRange, async (newRange) => {
+	let usage = await getUsage({ range: newRange })
+	if (usage.code !== 0) {
+		return
+	}
+	console.log(usage)
+	trafficData = usage.data.data.map((item: UsageData) =>
+	({
+		date: item.date,
+		value: item.usage
+	}))
+	updateChart()
+})
+onMounted(() => timeRange.value = '7d')
 </script>
 
 <template>
@@ -92,14 +105,14 @@ const chartOption = ref({
 				</NCard>
 			</NGridItem>
 		</NGrid>
-		
+
 		<NSpace vertical class="traffic-chart">
 			<div class="chart-header">
 				<h3>流量统计</h3>
 				<NRadioGroup v-model:value="timeRange" size="small">
+					<NRadio value="24h">24时</NRadio>
 					<NRadio value="7d">7日</NRadio>
 					<NRadio value="30d">30日</NRadio>
-					<NRadio value="week">周</NRadio>
 					<NRadio value="month">月</NRadio>
 				</NRadioGroup>
 			</div>
@@ -107,7 +120,7 @@ const chartOption = ref({
 				<div class="chart-container">
 					<v-chart class="chart" :option="chartOption" autoresize />
 				</div>
-				<NDataTable :columns="columns" :data="trafficData" :bordered="false" :pagination="false" />
+				<!-- <NDataTable :columns="columns" :data="trafficData" :bordered="false" :pagination="false" /> -->
 			</NCard>
 		</NSpace>
 	</div>

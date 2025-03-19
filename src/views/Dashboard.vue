@@ -85,7 +85,7 @@ watch(timeRange, async (newRange) => {
 		return
 	}
 	console.log(usage)
-	trafficData = usage.data.data.map((item: UsageData) =>
+	trafficData = usage.data.usages.map((item: UsageData) =>
 	({
 		date: item.date,
 		value: item.usage

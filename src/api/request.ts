@@ -3,7 +3,7 @@ import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'a
 
 interface CustomAxiosInstance extends AxiosInstance {
 	<T = any>(config: InternalAxiosRequestConfig): Promise<T>;
-	get<T = any>(url: string, config?: InternalAxiosRequestConfig): Promise<T>;
+	get<T = any, Y = any>(url: string, data?: Y, config?: InternalAxiosRequestConfig): Promise<T>;
 	post<T = any>(url: string, data?: any, config?: InternalAxiosRequestConfig): Promise<T>;
 }
 

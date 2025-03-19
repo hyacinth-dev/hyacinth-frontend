@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { markRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   NLayout,
@@ -37,22 +36,22 @@ const features = [
   {
     title: '高速稳定',
     description: '基于 Rust + Golang 技术, 实现高性能, 内存高效的网络服务',
-    icon: markRaw(SpeedometerOutline)
+    icon: SpeedometerOutline
   },
   {
     title: '安全加密',
     description: 'BGP 加密协议, 多重认证, 包加密等, 等级保密',
-    icon: markRaw(ShieldCheckmarkOutline)
+    icon: ShieldCheckmarkOutline
   },
   {
     title: '简单易用',
     description: '所有设备均可一键连接, 无需复杂设置',
-    icon: markRaw(HeartOutline)
+    icon: HeartOutline
   },
   {
     title: '优质服务',
     description: '多年技术沉淀, 稳定, 成熟的服务',
-    icon: markRaw(TrophyOutline)
+    icon: TrophyOutline
   }
 ]
 
@@ -60,22 +59,22 @@ const services = [
   {
     title: '游戏加速',
     description: '专业游戏加速服务，为您提供流畅稳定的游戏体验',
-    icon: markRaw(GameControllerOutline)
+    icon: GameControllerOutline
   },
   {
     title: '内网穿透',
     description: '高效的内网穿透服务，轻松实现远程访问和管理',
-    icon: markRaw(GitNetworkOutline)
+    icon: GitNetworkOutline
   },
   {
     title: '安全组网',
     description: '企业级安全组网方案，数据传输加密，访问权限可控',
-    icon: markRaw(ServerOutline)
+    icon: ServerOutline
   },
   {
     title: '跨平台访问',
     description: '支持各类设备接入，随时随地安全访问网络资源',
-    icon: markRaw(GlobeOutline)
+    icon: GlobeOutline
   }
 ]
 </script>

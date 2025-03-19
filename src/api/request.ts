@@ -46,8 +46,8 @@ service.interceptors.response.use(
 		if (error.response?.status === 401) {
 			// 清除token
 			localStorage.removeItem('token')
-			// 跳转到登录页，调试时如果要查看控制台输出，则不应该跳转
-			// window.location.href = '/login'
+			// 跳转到登录页
+			window.location.href = '/login'
 		}
 		return Promise.reject(error)
 	}

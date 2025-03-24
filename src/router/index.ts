@@ -3,11 +3,13 @@ import Home from '../views/Home.vue'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
 import UserPanel from '../views/UserPanel.vue'
-import Dashboard from '../views/Dashboard.vue'
-import Tunnels from '../views/Tunnels.vue'
-import Store from '../views/Store.vue'
-import Profile from '../views/Profile.vue'
-import About from '../views/About.vue'
+import UserDashboard from '../views/User/Dashboard.vue'
+import Tunnels from '../views/User/Tunnels.vue'
+import Store from '../views/User/Store.vue'
+import Profile from '../views/User/Profile.vue'
+import About from '../views/User/About.vue'
+import AdminDashboard from '../views/Admin/Dashboard.vue'
+import UserControl from '../views/Admin/UserControl.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -35,8 +37,8 @@ const router = createRouter({
       children: [
         {
           path: 'dashboard',
-          name: 'dashboard',
-          component: Dashboard
+          name: 'user-dashboard',
+          component: UserDashboard
         },
         {
           path: 'tunnels',
@@ -57,6 +59,25 @@ const router = createRouter({
           path: 'about',
           name: 'about',
           component: About
+        }
+      ]
+    },
+    {
+      path: '/admin',
+      name: 'admin',
+      component: UserPanel,
+      redirect: '/admin/dashboard',
+      children: [
+        {
+          path: 'dashboard',
+          name: 'admin-dashboard',
+          component: AdminDashboard
+        },
+
+        {
+          path: 'user-control',
+          name: 'user-control',
+          component: UserControl
         }
       ]
     }

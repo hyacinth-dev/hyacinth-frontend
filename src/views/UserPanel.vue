@@ -18,30 +18,50 @@ onMounted(() => {
   if (!token) {
     router.push('/login')
   }
+  const isAdmin = localStorage.getItem('isAdmin')
+  if (isAdmin === 'true') {
+    menuOptions = [
+      {
+        label: '仪表盘',
+        key: '/admin/dashboard',
+        icon: () => h(StatsChartOutline)
+      },
+      {
+        label: '用户管理',
+        key: '/admin/user-control',
+        icon: () => h(CartOutline)
+      },
+    ]
+    activeKey.value = '/admin/dashboard'
+  }
+  else {
+    menuOptions = [
+      {
+        label: '仪表盘',
+        key: '/user/dashboard',
+        icon: () => h(StatsChartOutline)
+      },
+      {
+        label: '隧道列表',
+        key: '/user/tunnels',
+        icon: () => h(SwapHorizontalOutline)
+      },
+      {
+        label: '商城',
+        key: '/user/store',
+        icon: () => h(CartOutline)
+      },
+      {
+        label: '关于',
+        key: '/user/about',
+        icon: () => h(InformationCircleOutline)
+      }
+    ]
+    activeKey.value = '/user/dashboard'
+  }
 })
 
-const menuOptions: MenuOption[] = [
-  {
-    label: '仪表盘',
-    key: '/user/dashboard',
-    icon: () => h(StatsChartOutline)
-  },
-  {
-    label: '隧道列表',
-    key: '/user/tunnels',
-    icon: () => h(SwapHorizontalOutline)
-  },
-  {
-    label: '商城',
-    key: '/user/store',
-    icon: () => h(CartOutline)
-  },
-  {
-    label: '关于',
-    key: '/user/about',
-    icon: () => h(InformationCircleOutline)
-  }
-]
+let menuOptions: MenuOption[] = []
 
 const dropdownOptions: DropdownOption[] = [
   {
@@ -63,7 +83,7 @@ const handleSelect = (key: string) => {
   }
 }
 
-const activeKey = ref('/user/dashboard')
+const activeKey = ref('')
 
 const handleUpdateValue = (key: string) => {
   router.push(key)
@@ -74,15 +94,12 @@ const handleUpdateValue = (key: string) => {
   <NLayout style="width: 100%; height: 100%;" has-sider>
     <NLayoutSider bordered collapse-mode="width" :collapsed-width="64" :width="240" show-trigger>
       <div class="sider-content">
-        <NMenu v-model:value="activeKey" :options="menuOptions" :collapsed-width="64" :collapsed-icon-size="22" @update:value="handleUpdateValue" />
+        <NMenu v-model:value="activeKey" :options="menuOptions" :collapsed-width="64" :collapsed-icon-size="22"
+          @update:value="handleUpdateValue" />
         <div class="user-profile">
           <NDropdown :options="dropdownOptions" @select="handleSelect">
             <NSpace align="center">
-              <NAvatar
-                round
-                :size="32"
-                :src="userInfo.avatar"
-              />
+              <NAvatar round :size="32" :src="userInfo.avatar" />
               <span class="username">{{ userInfo.nickname }}</span>
             </NSpace>
           </NDropdown>

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { NCard, NGrid, NGridItem, NStatistic, NSpace, NRadioGroup, NRadio, NDataTable } from 'naive-ui'
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
-import { getUsage, UsageData } from '../api/service'
+import { getUsage, UsageData } from '../../api/service'
 
 use([
 	CanvasRenderer,

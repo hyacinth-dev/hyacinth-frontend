@@ -30,8 +30,13 @@ const handleLogin = async () => {
 		const res = await login(formValue.value)
 		console.log(res)
 		localStorage.setItem('token', res.data.accessToken)
+		localStorage.setItem('isAdmin', res.data.isAdmin.toString())
 		message.success('登录成功')
-		router.push('/user')
+		if (res.data.isAdmin) {
+			router.push('/admin/dashboard')
+		} else {
+			router.push('/user/dashboard')
+		}
 	} catch (error) {
 		message.error('登录失败：' + ((error as any).message || '未知错误'))
 	}
@@ -55,7 +60,8 @@ const handleLogin = async () => {
 						</NFormItem>
 						<NFormItem path="password">
 							<NInput v-model:value="formValue.password" type="password" placeholder="密码" size="large"
-								show-password-on="click" :input-el-style="{ textAlign: 'center', paddingRight: '32px' }" />
+								show-password-on="click"
+								:input-el-style="{ textAlign: 'center', paddingRight: '32px' }" />
 						</NFormItem>
 						<div class="form-actions">
 							<NButton type="primary" size="large" block @click="handleLogin">登录</NButton>
@@ -80,7 +86,7 @@ const handleLogin = async () => {
 	justify-content: center;
 	align-items: center;
 	background: url('@/assets/login-background.jpg') center/cover no-repeat;
-	
+
 }
 
 .login-content {

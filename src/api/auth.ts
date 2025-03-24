@@ -12,15 +12,15 @@ export interface LoginResponseData {
 
 // 用户登录
 export function login(data: LoginParams): Promise<ApiResult<LoginResponseData>> {
-  return Promise.resolve({
-    code: 200,
-    data: {
-      accessToken: '123456789',
-      isAdmin: true,
-    },
-    message: 'success',
-  })
-  // return request.post<ApiResult<LoginResponseData>>('/login', data)
+  // return Promise.resolve({
+  //   code: 200,
+  //   data: {
+  //     accessToken: '123456789',
+  //     isAdmin: true,
+  //   },
+  //   message: 'success',
+  // })
+  return request.post<ApiResult<LoginResponseData>>('/login', data)
 }
 
 // 用户注册

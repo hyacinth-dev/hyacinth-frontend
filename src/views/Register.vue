@@ -8,7 +8,7 @@ const router = useRouter()
 const message = useMessage()
 const formRef = ref(null)
 const formValue = ref({
-	username: '',
+	// username: '',
 	email: '',
 	password: '',
 	confirmPassword: '',
@@ -16,11 +16,11 @@ const formValue = ref({
 })
 
 const rules = {
-	username: {
-		required: true,
-		message: '请输入用户名',
-		trigger: ['blur', 'input']
-	},
+	// username: {
+	// 	required: true,
+	// 	message: '请输入用户名',
+	// 	trigger: ['blur', 'input']
+	// },
 	email: {
 		required: true,
 		message: '请输入邮箱',
@@ -84,11 +84,15 @@ const handleSendCode = async () => {
 
 const handleRegister = async () => {
 	try {
-		await register(formValue.value)
+		await register({
+			email: formValue.value.email,
+			password: formValue.value.password
+		})
 		message.success('注册成功')
 		router.push('/login')
 	} catch (error) {
-		message.error('注册失败：' + ((error as any).message || '未知错误'))
+		console.log(error)
+		message.error('注册失败：' + ((error as any).response.data.message || '未知错误'))
 	}
 }
 </script>
@@ -104,23 +108,25 @@ const handleRegister = async () => {
 					</div>
 					<NForm ref="formRef" :model="formValue" label-placement="left" label-width="0"
 						require-mark-placement="right-hanging" :rules="rules">
-						<NFormItem path="username">
+						<!-- <NFormItem path="username">
 							<NInput v-model:value="formValue.username" placeholder="用户名" size="large"
 								:input-el-style="{ textAlign: 'center', paddingRight: '12px' }" />
-						</NFormItem>
+						</NFormItem> -->
 						<NFormItem path="email">
 							<NInput v-model:value="formValue.email" placeholder="邮箱" size="large"
 								:input-el-style="{ textAlign: 'center', paddingRight: '12px' }" />
 						</NFormItem>
 						<NFormItem path="password">
 							<NInput v-model:value="formValue.password" type="password" placeholder="密码" size="large"
-								show-password-on="click" :input-el-style="{ textAlign: 'center', paddingRight: '32px' }" />
+								show-password-on="click"
+								:input-el-style="{ textAlign: 'center', paddingRight: '32px' }" />
 						</NFormItem>
 						<NFormItem path="confirmPassword">
-							<NInput v-model:value="formValue.confirmPassword" type="password" placeholder="确认密码" size="large"
-								show-password-on="click" :input-el-style="{ textAlign: 'center', paddingRight: '32px' }" />
+							<NInput v-model:value="formValue.confirmPassword" type="password" placeholder="确认密码"
+								size="large" show-password-on="click"
+								:input-el-style="{ textAlign: 'center', paddingRight: '32px' }" />
 						</NFormItem>
-						<NFormItem path="verifyCode">
+						<!-- <NFormItem path="verifyCode">
 							<NSpace :wrap="false">
 								<NInput v-model:value="formValue.verifyCode" placeholder="验证码" size="large"
 									:input-el-style="{ textAlign: 'center', paddingRight: '12px' }" />
@@ -128,7 +134,7 @@ const handleRegister = async () => {
 									{{ countdown > 0 ? `${countdown}s后重试` : '发送验证码' }}
 								</NButton>
 							</NSpace>
-						</NFormItem>
+						</NFormItem> -->
 						<div class="form-actions">
 							<NButton type="primary" size="large" block @click="handleRegister">注册</NButton>
 						</div>

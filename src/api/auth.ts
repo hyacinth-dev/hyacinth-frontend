@@ -5,6 +5,11 @@ export interface LoginParams {
   password: string
 }
 
+export interface RegisterParams {
+  email: string
+  password: string
+}
+
 export interface LoginResponseData {
   accessToken: string
   isAdmin: boolean
@@ -24,8 +29,8 @@ export function login(data: LoginParams): Promise<ApiResult<LoginResponseData>> 
 }
 
 // 用户注册
-export function register(data: LoginParams) {
-  return request.post<ApiResult<string>>('/register', data)
+export function register(data: RegisterParams) {
+  return request.post<ApiResult<void>>('/register', data)
 }
 
 // 获取用户信息

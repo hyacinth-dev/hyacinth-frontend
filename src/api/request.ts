@@ -47,7 +47,9 @@ service.interceptors.response.use(
 			// 清除token
 			localStorage.removeItem('token')
 			// 跳转到登录页
-			window.location.href = '/login'
+			if (window.location.pathname !== '/login') {
+				window.location.href = '/login'
+			}
 		}
 		return Promise.reject(error)
 	}

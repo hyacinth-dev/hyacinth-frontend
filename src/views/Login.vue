@@ -5,13 +5,20 @@ import { NCard, NForm, NFormItem, NInput, NButton, useMessage } from 'naive-ui'
 import { login } from '../api/auth'
 
 const router = useRouter()
+// 消息提示实例，用于显示登录成功/失败的反馈
 const message = useMessage()
+// 表单引用，用于表单验证
 const formRef = ref(null)
+// 表单数据对象，包含用户输入的邮箱和密码
 const formValue = ref({
 	email: '',
 	password: ''
 })
 
+/**
+ * 表单验证规则
+ * 包含对邮箱格式的验证
+ */
 const rules = {
 	email: {
 		required: true,
@@ -25,13 +32,21 @@ const rules = {
 	}
 }
 
+/**
+ * 处理用户登录
+ * 向后端发送登录请求，并根据响应进行相应处理
+ */
 const handleLogin = async () => {
 	try {
+		// 调用登录API
 		const res = await login(formValue.value)
 		console.log(res)
+		// 保存认证信息到本地存储
 		localStorage.setItem('token', res.data.accessToken)
 		localStorage.setItem('isAdmin', res.data.isAdmin.toString())
+		// 显示登录成功消息
 		message.success('登录成功')
+		// 根据用户角色跳转到不同的仪表盘页面
 		if (res.data.isAdmin) {
 			router.push('/admin/dashboard')
 		} else {
@@ -44,31 +59,40 @@ const handleLogin = async () => {
 </script>
 
 <template>
+	<!-- 登录页面容器 -->
 	<div class="login-container">
+		<!-- 登录内容区域，包含左侧表单和右侧品牌介绍 -->
 		<div class="login-content">
+			<!-- 左侧登录表单区域 -->
 			<div class="login-left">
 				<NCard class="login-card" bordered>
+					<!-- 登录表单头部 -->
 					<div class="login-header">
 						<h2 class="login-title">欢迎回来</h2>
 						<p class="login-subtitle">请登录您的账号</p>
 					</div>
+					<!-- 登录表单 -->
 					<NForm ref="formRef" :model="formValue" label-placement="left" label-width="0"
 						require-mark-placement="right-hanging" :rules="rules">
+						<!-- 邮箱输入项 -->
 						<NFormItem path="email">
 							<NInput v-model:value="formValue.email" placeholder="邮箱" size="large"
 								:input-el-style="{ textAlign: 'center', paddingRight: '12px' }" />
 						</NFormItem>
+						<!-- 密码输入项 -->
 						<NFormItem path="password">
 							<NInput v-model:value="formValue.password" type="password" placeholder="密码" size="large"
 								show-password-on="click"
 								:input-el-style="{ textAlign: 'center', paddingRight: '32px' }" />
 						</NFormItem>
+						<!-- 登录按钮区域 -->
 						<div class="form-actions">
 							<NButton type="primary" size="large" block @click="handleLogin">登录</NButton>
 						</div>
 					</NForm>
 				</NCard>
 			</div>
+			<!-- 右侧品牌介绍区域 -->
 			<div class="login-right">
 				<div class="brand-content">
 					<h1 class="brand-title">Hyacinth</h1>
@@ -80,15 +104,16 @@ const handleLogin = async () => {
 </template>
 
 <style scoped>
+/* 登录页面容器样式，设置全屏高度和背景图 */
 .login-container {
 	height: 100vh;
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	background: url('@/assets/login-background.jpg') center/cover no-repeat;
-
 }
 
+/* 登录内容区域样式，包含左右两个部分 */
 .login-content {
 	display: flex;
 	width: 1000px;
@@ -99,6 +124,7 @@ const handleLogin = async () => {
 	overflow: hidden;
 }
 
+/* 左侧登录表单区域样式 */
 .login-left {
 	flex: 1;
 	display: flex;
@@ -107,6 +133,7 @@ const handleLogin = async () => {
 	padding: 40px;
 }
 
+/* 登录卡片样式 */
 .login-card {
 	width: 100%;
 	max-width: 400px;
@@ -114,27 +141,32 @@ const handleLogin = async () => {
 	border: none;
 }
 
+/* 登录表单头部样式 */
 .login-header {
 	text-align: center;
 	margin-bottom: 32px;
 }
 
+/* 登录标题样式 */
 .login-title {
 	font-size: 24px;
 	color: #333;
 	margin: 0 0 8px;
 }
 
+/* 登录副标题样式 */
 .login-subtitle {
 	font-size: 14px;
 	color: #666;
 	margin: 0;
 }
 
+/* 表单按钮区域样式 */
 .form-actions {
 	margin-top: 32px;
 }
 
+/* 右侧品牌介绍区域样式，使用渐变背景 */
 .login-right {
 	flex: 1;
 	background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
@@ -146,12 +178,14 @@ const handleLogin = async () => {
 	text-align: center;
 }
 
+/* 品牌标题样式 */
 .brand-title {
 	font-size: 48px;
 	font-weight: bold;
 	margin: 0 0 16px;
 }
 
+/* 品牌描述样式 */
 .brand-description {
 	font-size: 18px;
 	margin: 0;

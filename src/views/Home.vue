@@ -23,8 +23,10 @@ import {
   TrophyOutline
 } from '@vicons/ionicons5'
 
+// 路由实例，用于页面导航
 const router = useRouter()
 
+// 网站统计数据
 const statistics = [
   { label: '节点数', value: '29' },
   { label: '用户数', value: '30878' },
@@ -32,16 +34,17 @@ const statistics = [
   { label: '流量总量', value: '52.53 TB' }
 ]
 
+// 产品特性数据
 const features = [
   {
     title: '高速稳定',
     description: '基于 Rust + Golang 技术, 实现高性能, 内存高效的网络服务',
-    icon: SpeedometerOutline
+    icon: SpeedometerOutline // 速度计图标，突出高速稳定特性
   },
   {
     title: '安全加密',
     description: 'BGP 加密协议, 多重认证, 包加密等, 等级保密',
-    icon: ShieldCheckmarkOutline
+    icon: ShieldCheckmarkOutline // 盾牌图标，突出安全性
   },
   {
     title: '简单易用',
@@ -55,6 +58,7 @@ const features = [
   }
 ]
 
+// 服务类型数据
 const services = [
   {
     title: '游戏加速',
@@ -81,15 +85,19 @@ const services = [
 
 <template>
   <NLayout style="width: 100%; height: 100%;">
+    <!-- 页面顶部导航栏 -->
     <NLayoutHeader class="header">
       <div class="header-content">
         <div class="logo">Hyacinth</div>
+        <!-- 顶部导航按钮区域 -->
         <NSpace>
           <NButton @click="router.push('/login')">登录</NButton>
           <NButton type="primary" @click="router.push('/register')">注册</NButton>
         </NSpace>
       </div>
     </NLayoutHeader>
+    
+    <!-- 页面内容区域 -->
     <NLayoutContent content-style="padding: 24px;">
       <!-- 统计数据 -->
       <div class="statistics-section">
@@ -100,7 +108,7 @@ const services = [
         </NGrid>
       </div>
 
-      <!-- 为什么选择我们 -->
+      <!-- 产品特性部分 -->
       <div class="section">
         <h2 class="section-title">为什么选择我们？</h2>
         <NGrid :x-gap="24" :y-gap="24" :cols="4">
@@ -132,7 +140,7 @@ const services = [
         </NGrid>
       </div>
 
-      <!-- 准备好开始了吗 -->
+      <!-- 行动号召部分 -->
       <div class="cta-section">
         <h2 class="cta-title">准备好开始了吗？</h2>
         <p class="cta-description">加入我们，体验高速稳定的网络连接服务</p>
@@ -143,6 +151,7 @@ const services = [
 </template>
 
 <style scoped>
+/* 页面顶部导航栏样式 */
 .header {
   height: 64px;
   padding: 0 24px;
@@ -151,6 +160,7 @@ const services = [
   width: 100%;
 }
 
+/* 导航栏内容居中对齐 */
 .header-content {
   height: 100%;
   max-width: 1200px;
@@ -160,11 +170,13 @@ const services = [
   justify-content: space-between;
 }
 
+/* Logo样式 */
 .logo {
   font-size: 20px;
   font-weight: bold;
 }
 
+/* 统计数据区域样式 */
 .statistics-section {
   max-width: 1200px;
   margin: 24px auto;
@@ -174,11 +186,13 @@ const services = [
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
+/* 通用内容区块样式 */
 .section {
   max-width: 1200px;
   margin: 0 auto;
 }
 
+/* 区块标题样式 */
 .section-title {
   text-align: center;
   font-size: 24px;
@@ -186,26 +200,30 @@ const services = [
   color: #333;
 }
 
+/* 特性卡片和服务卡片通用样式 */
 .feature-card,
 .service-card {
   text-align: center;
   padding: 24px;
   height: 100%;
-  transition: all 0.3s ease;
+  transition: all 0.3s ease; /* 鼠标悬停动画效果 */
 }
 
+/* 卡片悬停效果 */
 .feature-card:hover,
 .service-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
+/* 卡片图标样式 */
 .feature-icon,
 .service-icon {
   margin-bottom: 16px;
   color: #6366f1;
 }
 
+/* 卡片标题样式 */
 .feature-title,
 .service-title {
   font-size: 18px;
@@ -213,6 +231,7 @@ const services = [
   color: #333;
 }
 
+/* 卡片描述文字样式 */
 .feature-description,
 .service-description {
   font-size: 14px;
@@ -221,6 +240,7 @@ const services = [
   line-height: 1.5;
 }
 
+/* 行动号召区域样式 */
 .cta-section {
   text-align: center;
   margin: 64px 0;
@@ -230,11 +250,13 @@ const services = [
   color: white;
 }
 
+/* 行动号召标题样式 */
 .cta-title {
   font-size: 32px;
   margin: 0 0 16px;
 }
 
+/* 行动号召描述样式 */
 .cta-description {
   font-size: 16px;
   margin: 0 0 32px;

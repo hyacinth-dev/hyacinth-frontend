@@ -1,19 +1,36 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import Home from '../views/Home.vue'
-import Login from '../views/Login.vue'
-import Register from '../views/Register.vue'
-import UserPanel from '../views/UserPanel.vue'
-import UserDashboard from '../views/User/Dashboard.vue'
-import Tunnels from '../views/User/Tunnels.vue'
-import Store from '../views/User/Store.vue'
-import Profile from '../views/User/Profile.vue'
-import About from '../views/User/About.vue'
-import AdminDashboard from '../views/Admin/Dashboard.vue'
-import UserControl from '../views/Admin/UserControl.vue'
+/**
+ * 路由配置文件
+ * 定义应用的路由结构，包括公共页面、用户页面和管理员页面
+ */
 
+import { createRouter, createWebHistory } from 'vue-router'
+
+// 页面组件导入
+// 公共页面
+import Home from '../views/Home.vue'          // 首页组件
+import Login from '../views/Login.vue'         // 登录页组件
+import Register from '../views/Register.vue'   // 注册页组件
+import UserPanel from '../views/UserPanel.vue' // 用户面板组件（同时用于普通用户和管理员）
+
+// 普通用户页面
+import UserDashboard from '../views/User/Dashboard.vue' // 用户仪表盘
+import Tunnels from '../views/User/Tunnels.vue'         // 隧道管理页面
+import Store from '../views/User/Store.vue'             // 商城页面
+import Profile from '../views/User/Profile.vue'         // 个人资料页面
+import About from '../views/User/About.vue'             // 关于页面
+
+// 管理员页面
+import AdminDashboard from '../views/Admin/Dashboard.vue' // 管理员仪表盘
+import UserControl from '../views/Admin/UserControl.vue'  // 用户管理页面
+
+/**
+ * 创建路由实例
+ * 使用HTML5 History API实现路由
+ */
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    // 公共路由 - 不需要登录即可访问
     {
       path: '/',
       name: 'home',
@@ -29,11 +46,13 @@ const router = createRouter({
       name: 'register',
       component: Register
     },
+
+    // 普通用户路由 - 需要用户权限
     {
       path: '/user',
       name: 'user',
-      component: UserPanel,
-      redirect: '/user/dashboard',
+      component: UserPanel, // 用户面板作为父级容器
+      redirect: '/user/dashboard', // 默认重定向到用户仪表盘
       children: [
         {
           path: 'dashboard',
@@ -62,18 +81,19 @@ const router = createRouter({
         }
       ]
     },
+
+    // 管理员路由 - 需要管理员权限
     {
       path: '/admin',
       name: 'admin',
-      component: UserPanel,
-      redirect: '/admin/dashboard',
+      component: UserPanel, // 复用用户面板组件，但会根据用户角色显示不同的内容
+      redirect: '/admin/dashboard', // 默认重定向到管理员仪表盘
       children: [
         {
           path: 'dashboard',
           name: 'admin-dashboard',
           component: AdminDashboard
         },
-
         {
           path: 'user-control',
           name: 'user-control',
@@ -83,5 +103,7 @@ const router = createRouter({
     }
   ]
 })
+
+// TODO: 添加路由守卫，根据用户登录状态和角色控制页面访问权限
 
 export default router

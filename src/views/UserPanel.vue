@@ -53,8 +53,8 @@ onMounted(() => {
         icon: () => h(StatsChartOutline)
       },
       {
-        label: '隧道列表',
-        key: '/user/tunnels',
+        label: '虚拟网络',
+        key: '/user/vnetwork',
         icon: () => h(SwapHorizontalOutline)
       },
       {

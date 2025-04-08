@@ -14,7 +14,7 @@ import UserPanel from '../views/UserPanel.vue' // 用户面板组件（同时用
 
 // 普通用户页面
 import UserDashboard from '../views/User/Dashboard.vue' // 用户仪表盘
-import Tunnels from '../views/User/Tunnels.vue'         // 隧道管理页面
+import VirtualNetwork from '../views/User/VirtualNetwork.vue'         // 隧道管理页面
 import Store from '../views/User/Store.vue'             // 商城页面
 import Profile from '../views/User/Profile.vue'         // 个人资料页面
 import About from '../views/User/About.vue'             // 关于页面
@@ -60,9 +60,9 @@ const router = createRouter({
           component: UserDashboard
         },
         {
-          path: 'tunnels',
-          name: 'tunnels',
-          component: Tunnels
+          path: 'vnetwork',
+          name: 'vnetwork',
+          component: VirtualNetwork
         },
         {
           path: 'store',

@@ -37,7 +37,7 @@ export interface GetUsageResponseData {
  */
 export function getUsageMock(params: GetUsageParams): Promise<ApiResult<GetUsageResponseData>> {
 	let usages: UsageData[] = []
-	
+
 	// 根据不同的时间范围生成不同的模拟数据
 	if (params.range === '24h') {
 		// 生成24小时的数据，每小时一个数据点
@@ -75,7 +75,7 @@ export function getUsageMock(params: GetUsageParams): Promise<ApiResult<GetUsage
 			})
 		}
 	}
-	
+
 	// 返回模拟的API响应数据
 	return Promise.resolve({
 		code: 0,
@@ -94,6 +94,7 @@ export function getUsageMock(params: GetUsageParams): Promise<ApiResult<GetUsage
  * @returns Promise - 返回后端的使用量数据
  */
 export function getUsage(params: GetUsageParams): Promise<ApiResult<GetUsageResponseData>> {
+	// return getUsageMock(params)  // 调用模拟数据方法，实际项目中应替换为后端API调用
 	// 向后端发送GET请求，路径为/usage，带上查询参数
-	return request.get('/usage', {params})
+	return request.get('/usage', { params })
 }

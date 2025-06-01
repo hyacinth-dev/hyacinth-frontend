@@ -104,6 +104,15 @@ const router = createRouter({
   ]
 })
 
-// TODO: 添加路由守卫，根据用户登录状态和角色控制页面访问权限
+// 路由守卫：已登录用户访问 login 页时自动跳转到 /user
+router.beforeEach((to, from, next) => {
+  // 假设本地存储有 token 表示已登录，可根据实际项目调整
+  const isLoggedIn = !!localStorage.getItem('token');
+  if (to.name === 'login' && isLoggedIn) {
+    next({ path: '/user' });
+  } else {
+    next();
+  }
+});
 
 export default router

@@ -11,7 +11,7 @@ const message = useMessage()
 const formRef = ref(null)
 // 表单数据对象，包含用户输入的邮箱和密码
 const formValue = ref({
-	email: '',
+	usernameOrEmail: '',
 	password: ''
 })
 
@@ -22,9 +22,10 @@ const formValue = ref({
 const rules = {
 	email: {
 		required: true,
-		message: '请输入邮箱',
+		message: '请输入用户名或邮箱',
 		trigger: ['blur', 'input'],
 		validator: (_rule: any, value: string) => {
+			return true
 			if (!value) return false
 			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 			return emailRegex.test(value)
@@ -53,7 +54,7 @@ const handleLogin = async () => {
 			router.push('/user/dashboard')
 		}
 	} catch (error) {
-		message.error('登录失败：' + ((error as any).message || '未知错误'))
+		message.error('用户名或密码错误')
 	}
 }
 </script>
@@ -76,7 +77,7 @@ const handleLogin = async () => {
 						require-mark-placement="right-hanging" :rules="rules">
 						<!-- 邮箱输入项 -->
 						<NFormItem path="email">
-							<NInput v-model:value="formValue.email" placeholder="邮箱" size="large"
+							<NInput v-model:value="formValue.usernameOrEmail" placeholder="用户名或邮箱" size="large"
 								:input-el-style="{ textAlign: 'center', paddingRight: '12px' }" />
 						</NFormItem>
 						<!-- 密码输入项 -->
@@ -89,6 +90,10 @@ const handleLogin = async () => {
 						<div class="form-actions">
 							<NButton type="primary" size="large" block @click="handleLogin">登录</NButton>
 						</div>
+						<!-- 跳转链接区域 -->
+						<div class="form-links">
+							<p class="link-text">还没有账号？<router-link to="/register" class="link">立即注册</router-link></p>
+						</div>
 					</NForm>
 				</NCard>
 			</div>
@@ -96,7 +101,7 @@ const handleLogin = async () => {
 			<div class="login-right">
 				<div class="brand-content">
 					<h1 class="brand-title">Hyacinth</h1>
-					<p class="brand-description">您的智能助手，为您提供更好的服务体验</p>
+					<p class="brand-description">构建您的专属网络，连接无限可能</p>
 				</div>
 			</div>
 		</div>
@@ -164,6 +169,30 @@ const handleLogin = async () => {
 /* 表单按钮区域样式 */
 .form-actions {
 	margin-top: 32px;
+}
+
+/* 跳转链接区域样式 */
+.form-links {
+	margin-top: 20px;
+	text-align: center;
+}
+
+.link-text {
+	font-size: 14px;
+	color: #666;
+	margin: 0;
+}
+
+.link {
+	color: #6366f1;
+	text-decoration: none;
+	font-weight: 500;
+	transition: color 0.3s ease;
+}
+
+.link:hover {
+	color: #4f46e5;
+	text-decoration: underline;
 }
 
 /* 右侧品牌介绍区域样式，使用渐变背景 */

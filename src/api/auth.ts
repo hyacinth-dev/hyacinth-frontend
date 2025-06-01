@@ -10,7 +10,7 @@ import { ApiResult } from './api'
  * 登录请求参数接口
  */
 export interface LoginParams {
-  email: string
+  usernameOrEmail: string
   password: string
 }
 
@@ -18,6 +18,7 @@ export interface LoginParams {
  * 注册请求参数接口
  */
 export interface RegisterParams {
+  username: string
   email: string
   password: string
 }
@@ -28,6 +29,53 @@ export interface RegisterParams {
 export interface LoginResponseData {
   accessToken: string
   isAdmin: boolean
+}
+
+/**
+ * 用户信息响应数据接口
+ */
+export interface UserInfoResponseData {
+  userId: string
+  username: string
+  email: string
+  userGroup: number
+  userGroupName: string
+  privilegeExpiry: string | null
+  isVip: boolean
+  activeTunnels: number
+  availableTraffic: string
+  onlineDevices: number
+}
+
+/**
+ * 用户组信息响应数据接口
+ */
+export interface UserGroupResponseData {
+  userGroup: number
+}
+
+/**
+ * 购买套餐请求参数接口
+ */
+export interface PurchasePackageParams {
+  packageType: number // 2=青铜 3=白银 4=黄金
+  duration?: number   // 购买时长（月数），默认为1
+}
+
+/**
+ * 更新个人信息请求参数接口
+ */
+export interface UpdateProfileParams {
+  username: string
+  email: string
+}
+
+/**
+ * 修改密码请求参数接口
+ */
+export interface ChangePasswordParams {
+  currentPassword: string
+  newPassword: string
 }
 
 /**
@@ -69,8 +117,18 @@ export function register(data: RegisterParams) {
  * 
  * @returns Promise - 返回用户信息
  */
-export function getUserInfo() {
+export function getUserInfo(): Promise<ApiResult<UserInfoResponseData>> {
   return request.get('/user')
+}
+
+/**
+ * 获取用户组信息方法
+ * 获取当前登录用户的组信息，用于商城套餐显示
+ * 
+ * @returns Promise - 返回用户组信息
+ */
+export function getUserGroup(): Promise<ApiResult<UserGroupResponseData>> {
+  return request.get('/user/group')
 }
 
 /**
@@ -81,4 +139,36 @@ export function getUserInfo() {
  */
 export function logout() {
   return request.post('/logout')
+}
+
+/**
+ * 购买增值服务套餐
+ * 
+ * @param data - 购买参数，包含套餐类型
+ * @returns Promise - 返回购买结果
+ */
+export function purchasePackage(data: PurchasePackageParams): Promise<ApiResult<void>> {
+  return request.post('/user/purchase', data)
+}
+
+/**
+ * 更新个人信息方法
+ * 向后端提交更新的用户信息
+ * 
+ * @param data - 更新参数，包含用户名和邮箱
+ * @returns Promise - 返回更新结果
+ */
+export function updateProfile(data: UpdateProfileParams): Promise<ApiResult<void>> {
+  return request.put('/user', data)
+}
+
+/**
+ * 修改密码方法
+ * 向后端提交密码修改请求
+ * 
+ * @param data - 修改密码参数，包含当前密码和新密码
+ * @returns Promise - 返回修改结果
+ */
+export function changePassword(data: ChangePasswordParams): Promise<ApiResult<void>> {
+  return request.put('/user/password', data)
 }

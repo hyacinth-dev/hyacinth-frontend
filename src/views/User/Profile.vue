@@ -1,29 +1,138 @@
 <script setup lang="ts">
-import { NForm, NFormItem, NInput, NButton, NCard, NSpace, NAvatar } from 'naive-ui'
-import { ref } from 'vue'
+import { NForm, NFormItem, NInput, NButton, NCard, NSpace, NAvatar, useMessage, FormRules, FormItemRule, FormInst } from 'naive-ui'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { getUserInfo, updateProfile, changePassword, UpdateProfileParams, ChangePasswordParams } from '../../api/auth'
+
+const message = useMessage()
+const router = useRouter()
 
 const userInfo = ref({
-  email: 'user@example.com',
-  nickname: '用户123',
+  email: '',
+  username: '',
   avatar: 'https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg'
 })
 
-const formRef = ref(null)
-const formValue = ref({
-  nickname: userInfo.value.nickname,
-  email: userInfo.value.email,
+const profileFormRef = ref<FormInst | null>(null)
+const passwordFormRef = ref<FormInst | null>(null)
+
+const profileFormValue = ref({
+  username: '',
+  email: ''
+})
+
+const passwordFormValue = ref({
   currentPassword: '',
   newPassword: '',
   confirmPassword: ''
 })
 
-const handleUpdateProfile = () => {
-  // TODO: 实现更新个人信息的逻辑
+const profileRules: FormRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 20, message: '用户名长度应在3-20个字符之间', trigger: 'blur' }
+  ]
 }
 
-const handleChangePassword = () => {
-  // TODO: 实现修改密码的逻辑
+const passwordRules: FormRules = {
+  currentPassword: [
+    { required: true, message: '请输入当前密码', trigger: 'blur' }
+  ],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '密码长度应在6-20个字符之间', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    {
+      validator: (_rule: FormItemRule, value: string) => {
+        return value === passwordFormValue.value.newPassword
+      },
+      message: '两次输入的密码不一致',
+      trigger: 'blur'
+    }
+  ]
 }
+
+const loading = ref(false)
+
+// 获取用户信息
+const fetchUserInfo = async () => {
+  try {
+    const response = await getUserInfo()
+    if (response.code === 0) {
+      userInfo.value.email = response.data.email
+      userInfo.value.username = response.data.username
+      profileFormValue.value.username = response.data.username
+      profileFormValue.value.email = response.data.email
+    } else {
+      message.error(response.message || '获取用户信息失败')
+    }
+  } catch (error) {
+    message.error('获取用户信息失败')
+    console.error('获取用户信息失败:', error)
+  }
+}
+
+// 更新个人信息
+const handleUpdateProfile = async () => {
+  try {
+    await profileFormRef.value?.validate()
+    loading.value = true
+
+    const params: UpdateProfileParams = {
+      username: profileFormValue.value.username,
+      email: profileFormValue.value.email
+    }
+
+    await updateProfile(params)
+    message.success('个人信息更新成功')
+    userInfo.value.username = profileFormValue.value.username
+    userInfo.value.email = profileFormValue.value.email
+  } catch (error) {
+    message.error('更新失败: ' + (error as any).response.data.message || '未知错误')
+    console.error('更新个人信息失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 修改密码
+const handleChangePassword = async () => {
+  try {
+    await passwordFormRef.value?.validate()
+    loading.value = true
+
+    const params: ChangePasswordParams = {
+      currentPassword: passwordFormValue.value.currentPassword,
+      newPassword: passwordFormValue.value.newPassword
+    }
+
+    await changePassword(params)
+    message.success('密码修改成功，即将退出登录')
+    // 清空密码表单
+    passwordFormValue.value = {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    }
+    // 延迟1秒后退出登录并跳转到登录页面
+    setTimeout(() => {
+      localStorage.removeItem('token')
+      router.push('/login')
+    }, 1000)
+  } catch (error) {
+    message.error('密码修改失败: ' + (error as any).response.data.message || '未知错误')
+    console.error('修改密码失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 组件挂载时获取用户信息
+onMounted(() => {
+  fetchUserInfo()
+})
 </script>
 
 <template>
@@ -33,61 +142,40 @@ const handleChangePassword = () => {
       <NSpace vertical size="large">
         <NCard title="基本信息">
           <div class="user-info">
-            <NAvatar
-              round
-              :size="64"
-              :src="userInfo.avatar"
-            />
-            <NForm
-              ref="formRef"
-              :model="formValue"
-              label-placement="left"
-              label-width="100"
-              class="form"
-            >
-              <NFormItem label="昵称" path="nickname">
-                <NInput v-model:value="formValue.nickname" />
+            <NAvatar round :size="64" :src="userInfo.avatar" />
+            <NForm ref="profileFormRef" :model="profileFormValue" :rules="profileRules" label-placement="left"
+              label-width="100" class="form">
+              <NFormItem label="用户名" path="username">
+                <NInput v-model:value="profileFormValue.username" />
               </NFormItem>
               <NFormItem label="邮箱" path="email">
-                <NInput v-model:value="formValue.email" disabled />
+                <NInput v-model:value="profileFormValue.email" disabled />
               </NFormItem>
               <NFormItem>
-                <NButton type="primary" @click="handleUpdateProfile">保存修改</NButton>
+                <NButton type="primary" :loading="loading" @click="handleUpdateProfile">
+                  保存修改
+                </NButton>
               </NFormItem>
             </NForm>
           </div>
         </NCard>
 
         <NCard title="修改密码">
-          <NForm
-            ref="formRef"
-            :model="formValue"
-            label-placement="left"
-            label-width="100"
-          >
+          <NForm ref="passwordFormRef" :model="passwordFormValue" :rules="passwordRules" label-placement="left"
+            label-width="100">
             <NFormItem label="当前密码" path="currentPassword">
-              <NInput
-                v-model:value="formValue.currentPassword"
-                type="password"
-                show-password-on="click"
-              />
+              <NInput v-model:value="passwordFormValue.currentPassword" type="password" show-password-on="click" />
             </NFormItem>
             <NFormItem label="新密码" path="newPassword">
-              <NInput
-                v-model:value="formValue.newPassword"
-                type="password"
-                show-password-on="click"
-              />
+              <NInput v-model:value="passwordFormValue.newPassword" type="password" show-password-on="click" />
             </NFormItem>
             <NFormItem label="确认新密码" path="confirmPassword">
-              <NInput
-                v-model:value="formValue.confirmPassword"
-                type="password"
-                show-password-on="click"
-              />
+              <NInput v-model:value="passwordFormValue.confirmPassword" type="password" show-password-on="click" />
             </NFormItem>
             <NFormItem>
-              <NButton type="primary" @click="handleChangePassword">修改密码</NButton>
+              <NButton type="primary" :loading="loading" @click="handleChangePassword">
+                修改密码
+              </NButton>
             </NFormItem>
           </NForm>
         </NCard>

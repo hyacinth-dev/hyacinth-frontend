@@ -1,36 +1,58 @@
 <script setup lang="ts">
-import { NDataTable, NButton, NSpace, NCard, NModal, NForm, NFormItem, NInput, NSwitch } from 'naive-ui'
-import { h, ref } from 'vue'
+import { NDataTable, NButton, NSpace, NCard, NModal, NForm, NFormItem, NInput, NInputNumber, NSwitch, NText, useMessage } from 'naive-ui'
+import { h, ref, onMounted } from 'vue'
+import { getVNetList, createVNet, updateVNet, deleteVNet, getVNetLimitInfo, type VNetData, type CreateVNetRequest, type UpdateVNetRequest, type VNetLimitInfo } from '../../api/vnet'
+import TrafficChart from '../../components/TrafficChart.vue'
 
-const vnetworks = ref([
-  {
-    id: 1,
-    name: '隧道1',
-    online: 5,
-    status: '运行中',
-    traffic: '1.2GB'
-  },
-  {
-    id: 2,
-    name: '隧道2',
-    online: 0,
-    status: '已停止',
-    traffic: '500MB'
-  }
-])
+const message = useMessage()
+
+const vnetworks = ref<VNetData[]>([])
+const loading = ref(false)
+const limitInfo = ref<VNetLimitInfo | null>(null)
+
+// 统计展示相关状态
+const expandedStats = ref<Record<string, boolean>>({})
+
+// IP地址格式验证函数
+const validateIpAddress = (ip: string): boolean => {
+  const ipRegex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+  return ipRegex.test(ip)
+}
 
 const columns = [
-  { title: '名称', key: 'name' },
-  { title: '状态', key: 'status' },
-  { title: '连接数', key: 'online' },
-  { title: '流量', key: 'traffic' },
+  { title: '网络名称', key: 'token' },
+  { title: '网络密码', key: 'password' },
+  { title: '备注', key: 'comment' },
+  {
+    title: '状态',
+    key: 'enabled',
+    render: (row: VNetData) => row.enabled ? '运行中' : '已停止'
+  },
+  { title: '在线连接数', key: 'clientsOnline' },
+  { title: '最大连接数', key: 'clientsLimit' },
+  {
+    title: 'IP 范围（若开启 DHCP)', key: 'ipRange',
+    render: (row: VNetData) => row.enableDHCP ? row.ipRange : '已禁用'
+  },
   {
     title: '操作',
     key: 'actions',
-    render: () => h(NSpace, null, {
-      default: () => [
-        h(NButton, { size: 'small', type: 'primary' }, { default: () => '编辑' }),
-        h(NButton, { size: 'small', type: 'error' }, { default: () => '删除' })
+    render: (row: VNetData) => h(NSpace, null, {
+      default: () => [h(NButton, {
+        size: 'small',
+        type: 'primary',
+        onClick: () => openEditModal(row)
+      }, { default: () => '编辑' }),
+      h(NButton, {
+        size: 'small',
+        type: expandedStats.value[row.vnetId] ? 'warning' : 'info',
+        onClick: () => toggleStats(row.vnetId)
+      }, { default: () => '统计' }),
+      h(NButton, {
+        size: 'small',
+        type: 'error',
+        onClick: () => handleDeleteNetwork(row.vnetId)
+      }, { default: () => '删除' })
       ]
     })
   }
@@ -38,59 +60,286 @@ const columns = [
 
 // 添加新虚拟网络相关的数据和函数
 const showNetworkModal = ref(false)
+const isEditing = ref(false)
+const editingVnetId = ref('')
+
 const networkForm = ref({
-  name: '',
-  roomId: '',
-  ipRange: '',
-  enableDhcp: true
+  comment: '',
+  token: '',
+  password: '',
+  ipAddress: '',
+  cidr: 24,
+  enableDHCP: true,
+  clientsLimit: 10,
+  enabled: true
 })
 
-const handleCreateNetwork = () => {
-  // 实现创建虚拟网络的逻辑
-  console.log('创建新的虚拟网络:', networkForm.value)
-  showNetworkModal.value = false
+// 获取虚拟网络列表
+const fetchVNetworks = async () => {
+  try {
+    loading.value = true
+    const response = await getVNetList()
+    vnetworks.value = response.data.vnets || []
+  } catch (error) {
+    console.error('获取虚拟网络列表失败:', error)
+    message.error('获取虚拟网络列表失败')
+  } finally {
+    loading.value = false
+  }
 }
 
-const openNetworkModal = () => {
-  // 重置表单
+// 获取虚拟网络限制信息
+const fetchVNetLimitInfo = async () => {
+  try {
+    const response = await getVNetLimitInfo()
+    console.log('API Response:', response)
+    console.log('Response Data:', response.data)
+    limitInfo.value = response.data
+  } catch (error) {
+    console.error('获取虚拟网络限制信息失败:', error)
+  }
+}
+
+// 组件挂载时获取数据
+onMounted(() => {
+  fetchVNetworks()
+  fetchVNetLimitInfo()
+})
+
+// 表单验证函数
+const validateForm = (): boolean => {
+  // 验证Token
+  if (!networkForm.value.token.trim()) {
+    message.error('Token不能为空')
+    return false
+  }
+  if (networkForm.value.token.length > 50) {
+    message.error('Token长度不能超过50个字符')
+    return false
+  }
+
+  // 验证密码
+  if (!networkForm.value.password.trim()) {
+    message.error('密码不能为空')
+    return false
+  }
+  if (networkForm.value.password.length > 50) {
+    message.error('密码长度不能超过50个字符')
+    return false
+  }
+
+  // 验证备注长度
+  if (networkForm.value.comment && networkForm.value.comment.length > 100) {
+    message.error('备注长度不能超过100个字符')
+    return false
+  }
+  // 验证IP地址格式（仅在DHCP开启时验证）
+  if (networkForm.value.enableDHCP) {
+    if (!networkForm.value.ipAddress.trim()) {
+      message.error('IP地址不能为空')
+      return false
+    }
+    if (!validateIpAddress(networkForm.value.ipAddress)) {
+      message.error('请输入有效的IP地址格式')
+      return false
+    }
+
+    // 验证CIDR范围
+    if (networkForm.value.cidr < 8 || networkForm.value.cidr > 30) {
+      message.error('CIDR值必须在8-30之间')
+      return false
+    }
+  }// 验证最大连接数
+  if (!networkForm.value.clientsLimit || networkForm.value.clientsLimit <= 0) {
+    message.error('最大连接数必须是大于0的数字')
+    return false
+  }
+
+  // 根据用户权限验证最大连接数
+  if (limitInfo.value) {
+    const maxAllowed = limitInfo.value.maxClientsLimitPerVNet
+    if (maxAllowed !== 999999 && networkForm.value.clientsLimit > maxAllowed) {
+      message.error(`最大连接数不能超过 ${maxAllowed}，请升级套餐以支持更多连接`)
+      return false
+    }
+  }
+
+  return true
+}
+
+const handleCreateNetwork = async () => {
+  try {
+    // 表单验证
+    if (!validateForm()) {
+      return
+    }
+
+    // 合并IP地址和CIDR，当DHCP关闭时使用默认值
+    const ipRange = networkForm.value.enableDHCP
+      ? `${networkForm.value.ipAddress}/${networkForm.value.cidr}`
+      : '192.168.100.0/24';
+    const requestData: CreateVNetRequest | UpdateVNetRequest = {
+      comment: networkForm.value.comment,
+      token: networkForm.value.token,
+      password: networkForm.value.password, ipRange: ipRange,
+      enableDHCP: networkForm.value.enableDHCP,
+      clientsLimit: networkForm.value.clientsLimit,
+      enabled: networkForm.value.enabled
+    }
+
+    if (isEditing.value) {
+      // 更新现有虚拟网络
+      await updateVNet(editingVnetId.value, requestData)
+      message.success('更新虚拟网络成功')
+      await fetchVNetworks() // 重新获取列表
+      await fetchVNetLimitInfo() // 重新获取限制信息
+    } else {
+      // 创建新的虚拟网络
+      await createVNet(requestData)
+      message.success('创建虚拟网络成功')
+      await fetchVNetworks() // 重新获取列表
+      await fetchVNetLimitInfo() // 重新获取限制信息
+    }
+    showNetworkModal.value = false
+  } catch (error) {
+    console.error('操作虚拟网络失败:', error)
+    const errorMessage = (error as any).response?.data?.message || '未知错误'
+
+    // 针对虚拟网络限制超出的特殊处理
+    if (errorMessage.includes('Virtual network limit exceeded')) {
+      message.error('虚拟网络数量已达到您当前权限等级的上限，请升级套餐以创建更多网络')
+    } else if (errorMessage.includes('VNet clients limit would be exceeded')) {
+      message.error('最大连接数超过您当前权限等级的限制，请升级套餐或减少连接数')
+    } else {
+      message.error('操作失败：' + errorMessage)
+    }
+  }
+}
+
+const openNetworkModal = () => {  // 重置表单
+  isEditing.value = false;
+  editingVnetId.value = '';
+
+  // 根据用户权限设置默认最大连接数
+  const defaultClientsLimit = limitInfo.value?.maxClientsLimitPerVNet || 10;
+
   networkForm.value = {
-    name: '',
-    roomId: '',
-    ipRange: '',
-    enableDhcp: true
+    comment: '',
+    token: '',
+    password: '', ipAddress: '192.168.100.0',
+    cidr: 24,
+    enableDHCP: true,
+    clientsLimit: defaultClientsLimit,
+    enabled: true
   }
   showNetworkModal.value = true
+}
+
+const openEditModal = (vnet: VNetData) => {
+  isEditing.value = true
+  editingVnetId.value = vnet.vnetId
+
+  // 解析IP范围
+  const [ipAddress, cidrStr] = vnet.ipRange.split('/')
+  const cidr = parseInt(cidrStr) || 24
+  networkForm.value = {
+    comment: vnet.comment,
+    token: vnet.token,
+    password: vnet.password,
+    ipAddress: ipAddress, cidr: cidr,
+    enableDHCP: vnet.enableDHCP,
+    clientsLimit: vnet.clientsLimit,
+    enabled: vnet.enabled
+  }
+  showNetworkModal.value = true
+}
+
+const handleDeleteNetwork = async (vnetId: string) => {
+  try {
+    await deleteVNet(vnetId)
+    message.success('删除虚拟网络成功')
+    await fetchVNetworks() // 重新获取列表
+    await fetchVNetLimitInfo() // 重新获取限制信息
+  } catch (error) {
+    console.error('删除虚拟网络失败:', error)
+    message.error('删除失败')
+  }
+}
+
+// 切换统计展示状态
+const toggleStats = (vnetId: string) => {
+  // 如果当前vnet已经展开，则关闭它
+  if (expandedStats.value[vnetId]) {
+    expandedStats.value[vnetId] = false
+  } else {
+    // 如果当前vnet未展开，先关闭所有其他已展开的统计，然后展开当前的
+    // 重置所有展开状态
+    Object.keys(expandedStats.value).forEach(key => {
+      expandedStats.value[key] = false
+    })
+    // 展开当前虚拟网络的统计
+    expandedStats.value[vnetId] = true
+  }
 }
 </script>
 
 <template>
   <div class="tunnels">
     <div class="tunnels-header">
-      <h2>隧道列表</h2>
-      <NButton type="primary" @click="openNetworkModal">新建虚拟网络</NButton>
+      <h2>虚拟网络</h2>
+      <div>
+        <!-- 显示虚拟网络限制信息 -->
+        <NText v-if="limitInfo" style="margin-right: 16px;">
+          虚拟网络使用情况: {{ limitInfo.currentCount }} / {{ limitInfo.maxLimit }}
+        </NText>
+        <NButton type="primary" @click="openNetworkModal">新建虚拟网络</NButton>
+      </div>
     </div>
     <NCard>
-      <NDataTable :columns="columns" :data="vnetworks" :bordered="false" />
-    </NCard>
+      <NDataTable :columns="columns" :data="vnetworks" :bordered="false" :loading="loading" :pagination="false" />
 
-    <!-- 新建虚拟网络配置窗口 -->
-    <NModal v-model:show="showNetworkModal" title="新建虚拟网络" preset="dialog" :mask-closable="false">
-      <NForm :model="networkForm" label-placement="left" label-width="120px">
-        <NFormItem label="网络名称" required>
-          <NInput v-model:value="networkForm.name" placeholder="请输入网络名称" />
+      <!-- 虚拟网络统计展示 -->
+      <template v-for="vnet in vnetworks" :key="vnet.vnetId">
+        <div v-if="expandedStats[vnet.vnetId]" class="vnet-stats">
+          <TrafficChart :vnet-id="vnet.vnetId" :title="`${vnet.comment} 流量统计`" height="250px" />
+        </div>
+      </template>
+    </NCard><!-- 新建/编辑虚拟网络配置窗口 -->
+    <NModal v-model:show="showNetworkModal" :title="isEditing ? '编辑虚拟网络' : '新建虚拟网络'" preset="dialog"
+      :mask-closable="false">
+      <NForm :model="networkForm" label-placement="left" label-width="100px">
+        <NFormItem label="Token" required>
+          <NInput v-model:value="networkForm.token" maxlength="50" show-count clearable placeholder="需唯一且不与其他用户重复" />
         </NFormItem>
-        <NFormItem label="网络房间号" required>
-          <NInput v-model:value="networkForm.roomId" placeholder="请输入网络房间号" />
+        <NFormItem label="密码" required>
+          <NInput v-model:value="networkForm.password" maxlength="50" show-count clearable placeholder="请输入密码" />
         </NFormItem>
-        <NFormItem label="分配IP段" required>
-          <NInput v-model:value="networkForm.ipRange" placeholder="例如: 192.168.1.0/24" />
+        <NFormItem label="备注">
+          <NInput v-model:value="networkForm.comment" placeholder="请输入备注（可选）" maxlength="100" show-count clearable />
         </NFormItem>
         <NFormItem label="开启DHCP">
-          <NSwitch v-model:value="networkForm.enableDhcp" />
+          <NSwitch v-model:value="networkForm.enableDHCP" />
+        </NFormItem>
+        <NFormItem :label="'分配IP段'" :required="networkForm.enableDHCP">
+          <NSpace align="center" :wrap="false">
+            <NInput v-model:value="networkForm.ipAddress" :disabled="!networkForm.enableDHCP"
+              placeholder="例如: 192.168.1.0" style="flex: 1" />
+            <NText>/</NText>
+            <NInputNumber v-model:value="networkForm.cidr" :disabled="!networkForm.enableDHCP" :min="8" :max="30"
+              :step="1" style="width: 80px" />
+          </NSpace>
+        </NFormItem>
+        <NFormItem label="最大连接数" required>
+          <NInputNumber v-model:value="networkForm.clientsLimit" />
+        </NFormItem>
+        <NFormItem label="启用状态">
+          <NSwitch v-model:value="networkForm.enabled" />
         </NFormItem>
       </NForm>
       <template #action>
-        <NButton type="primary" @click="handleCreateNetwork">确认</NButton>
+        <NButton type="primary" @click="handleCreateNetwork">
+          {{ isEditing ? '更新' : '确认' }}
+        </NButton>
         <NButton class="ml-4" @click="showNetworkModal = false">取消</NButton>
       </template>
     </NModal>
@@ -116,5 +365,13 @@ const openNetworkModal = () => {
 
 .ml-4 {
   margin-left: 16px;
+}
+
+.vnet-stats {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #e0e0e6;
+  border-radius: 6px;
+  background-color: #fafafa;
 }
 </style>

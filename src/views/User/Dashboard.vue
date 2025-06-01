@@ -1,98 +1,94 @@
 <script setup lang="ts">
-import { NCard, NGrid, NGridItem, NStatistic, NSpace, NRadioGroup, NRadio, NDataTable } from 'naive-ui'
-import { ref, watch, onMounted } from 'vue'
-import { use } from 'echarts/core'
-import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart } from 'echarts/charts'
-import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
-import VChart from 'vue-echarts'
-import { getUsage, UsageData } from '../../api/service'
+import { NCard, NGrid, NGridItem, NStatistic } from 'naive-ui'
+import { ref, onMounted } from 'vue'
+import { getUserInfo, UserInfoResponseData } from '../../api/auth'
+import TrafficChart from '../../components/TrafficChart.vue'
 
-use([
-	CanvasRenderer,
-	LineChart,
-	GridComponent,
-	TooltipComponent,
-	LegendComponent
+const userInfo = ref<UserInfoResponseData | null>(null)
+const stats = ref([
+	{ label: '活跃隧道', value: 0 },
+	{ label: '可用流量', value: '加载中...' },
+	{ label: '在线设备', value: 0 },
+	{ label: '用户组', value: '加载中...' }
 ])
 
-const stats = [
-	{ label: '活跃隧道', value: 5 },
-	{ label: '总流量', value: '1.2GB' },
-	{ label: '在线设备', value: 3 },
-	{ label: '账户余额', value: '￥100.00' }
-]
-
-const timeRange = ref('')
-let trafficData: { date: string, value: number }[] = []
-
-const columns = [
-	{ title: '时间', key: 'date' },
-	{ title: '流量 (GiB)', key: 'value' }
-]
-
-const chartOption = ref({
-	tooltip: {
-		trigger: 'axis',
-		axisPointer: {
-			type: 'cross',
-			label: {
-				backgroundColor: '#6a7985'
-			}
-		}
-	},
-	grid: {
-		left: '3%',
-		right: '4%',
-		bottom: '3%',
-		containLabel: true
-	},
-	xAxis: {
-		type: 'category',
-		boundaryGap: false,
-		data: [] as string[],
-	},
-	yAxis: {
-		type: 'value',
-		name: 'GiB'
-	},
-	series: [
-		{
-			name: '流量',
-			type: 'line',
-			data: [] as number[],
-			smooth: true,
-			showSymbol: false,
-			itemStyle: {
-				color: '#18a058'
-			},
-			areaStyle: {
-				color: '#18a058',
-				opacity: 0.1
-			}
-		}
-	]
-})
-
-const updateChart = () => {
-	chartOption.value.xAxis.data = trafficData.map(item => item.date)
-	chartOption.value.series[0].data = trafficData.map(item => item.value)
+// 格式化流量显示，使用二进制单位 (KiB/MiB/GiB/TiB)
+const formatTrafficFromString = (trafficStr: string): string => {
+	// 解析后端返回的格式化字符串，如 "1.23 GB" 或 "2.45 TB"
+	const match = trafficStr.match(/^([\d.]+)\s*(GB|TB|MB|KB)$/)
+	if (!match) {
+		return trafficStr // 如果无法解析，返回原字符串
+	}
+	
+	const value = parseFloat(match[1])
+	const unit = match[2]
+	
+	// 将值转换为字节数（注意：后端实际使用的是二进制计算但显示为十进制单位）
+	let bytes: number
+	switch (unit) {
+		case 'TB':
+			bytes = value * 1024 * 1024 * 1024 * 1024 // TiB
+			break
+		case 'GB':
+			bytes = value * 1024 * 1024 * 1024 // GiB
+			break
+		case 'MB':
+			bytes = value * 1024 * 1024 // MiB
+			break
+		case 'KB':
+			bytes = value * 1024 // KiB
+			break
+		default:
+			return trafficStr
+	}
+	
+	// 重新格式化为适合的单位
+	if (bytes >= 1024 * 1024 * 1024 * 1024) {
+		return `${(bytes / (1024 * 1024 * 1024 * 1024)).toFixed(2)} TiB`
+	} else if (bytes >= 1024 * 1024 * 1024) {
+		return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GiB`
+	} else if (bytes >= 1024 * 1024) {
+		return `${(bytes / (1024 * 1024)).toFixed(2)} MiB`
+	} else if (bytes >= 1024) {
+		return `${(bytes / 1024).toFixed(2)} KiB`
+	} else {
+		return `${bytes.toFixed(0)} Bytes`
+	}
 }
 
-watch(timeRange, async (newRange) => {
-	let usage = await getUsage({ range: newRange })
-	if (usage.code !== 0) {
-		return
+const fetchUserInfo = async () => {
+	try {
+		const response = await getUserInfo()
+		if (response.code === 0) {
+			userInfo.value = response.data
+			
+			// 处理用户组显示：如果是VIP用户且有到期时间，则显示到期时间
+			let userGroupDisplay = response.data.userGroupName
+			if (response.data.isVip && response.data.privilegeExpiry) {
+				const expiryDate = new Date(response.data.privilegeExpiry)
+				const formattedDate = expiryDate.toLocaleDateString('zh-CN', {
+					year: 'numeric',
+					month: '2-digit',
+					day: '2-digit'
+				})
+				userGroupDisplay = `${response.data.userGroupName}（${formattedDate}到期）`
+			}
+			// 更新stats数据
+			stats.value = [
+				{ label: '活跃隧道', value: response.data.activeTunnels },
+				{ label: '可用流量', value: formatTrafficFromString(response.data.availableTraffic) },
+				{ label: '在线设备', value: response.data.onlineDevices },
+				{ label: '用户组', value: userGroupDisplay }
+			]
+		}
+	} catch (error) {
+		console.error('获取用户信息失败:', error)
 	}
-	console.log(usage)
-	trafficData = usage.data.usages.map((item: UsageData) =>
-	({
-		date: item.date,
-		value: item.usage
-	}))
-	updateChart()
+}
+
+onMounted(() => {
+	fetchUserInfo()
 })
-onMounted(() => timeRange.value = '7d')
 </script>
 
 <template>
@@ -106,23 +102,8 @@ onMounted(() => timeRange.value = '7d')
 			</NGridItem>
 		</NGrid>
 
-		<NSpace vertical class="traffic-chart">
-			<div class="chart-header">
-				<h3>流量统计</h3>
-				<NRadioGroup v-model:value="timeRange" size="small">
-					<NRadio value="24h">24时</NRadio>
-					<NRadio value="7d">7日</NRadio>
-					<NRadio value="30d">30日</NRadio>
-					<NRadio value="month">月</NRadio>
-				</NRadioGroup>
-			</div>
-			<NCard>
-				<div class="chart-container">
-					<v-chart class="chart" :option="chartOption" autoresize />
-				</div>
-				<!-- <NDataTable :columns="columns" :data="trafficData" :bordered="false" :pagination="false" /> -->
-			</NCard>
-		</NSpace>
+		<!-- 使用新的流量统计组件 -->
+		<TrafficChart title="总流量统计" />
 	</div>
 </template>
 
@@ -134,31 +115,5 @@ onMounted(() => timeRange.value = '7d')
 .dashboard h2 {
 	margin-bottom: 24px;
 	font-size: 20px;
-}
-
-.traffic-chart {
-	margin-top: 24px;
-}
-
-.chart-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-}
-
-.chart-header h3 {
-	margin: 0;
-	font-size: 16px;
-}
-
-.chart-container {
-	width: 100%;
-	height: 300px;
-	margin-bottom: 16px;
-}
-
-.chart {
-	width: 100%;
-	height: 100%;
 }
 </style>

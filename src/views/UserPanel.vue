@@ -4,27 +4,48 @@ import { h, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import type { MenuOption, DropdownOption } from 'naive-ui'
 import { StatsChartOutline, SwapHorizontalOutline, CartOutline, InformationCircleOutline } from '@vicons/ionicons5'
+import { getUserInfo } from '../api/auth'
 
 const router = useRouter()
 
-// 用户信息数据，后续可从API获取真实数据
+// 用户信息数据，从API获取真实数据
 const userInfo = ref({
-  email: 'user@example.com',
-  nickname: '用户123',
+  email: '',
+  username: '',
   avatar: 'https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg'
 })
+
+/**
+ * 获取用户信息
+ */
+const fetchUserInfo = async () => {
+  try {
+    const response = await getUserInfo()
+    if (response.code === 0) {
+      userInfo.value.email = response.data.email
+      userInfo.value.username = response.data.username
+    }
+  } catch (error) {
+    console.error('获取用户信息失败:', error)
+  }
+}
 
 /**
  * 组件挂载时执行的操作
  * 1. 检查用户登录状态
  * 2. 根据用户角色设置不同的导航菜单
+ * 3. 获取用户信息
  */
 onMounted(() => {
   // 检查用户是否登录，如果未登录则跳转到登录页
   const token = localStorage.getItem('token')
   if (!token) {
     router.push('/login')
+    return
   }
+
+  // 获取用户信息
+  fetchUserInfo()
 
   // 根据用户角色（管理员/普通用户）设置不同的导航菜单
   const isAdmin = localStorage.getItem('isAdmin')
@@ -125,11 +146,10 @@ const handleUpdateValue = (key: string) => {
           @update:value="handleUpdateValue" />
 
         <!-- 用户信息区域，显示在侧边栏底部 -->
-        <div class="user-profile">
-          <NDropdown :options="dropdownOptions" @select="handleSelect">
+        <div class="user-profile">          <NDropdown :options="dropdownOptions" @select="handleSelect">
             <NSpace align="center">
               <NAvatar round :size="32" :src="userInfo.avatar" />
-              <span class="username">{{ userInfo.nickname }}</span>
+              <span class="username">{{ userInfo.username }}</span>
             </NSpace>
           </NDropdown>
         </div>

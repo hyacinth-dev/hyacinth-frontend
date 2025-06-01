@@ -11,14 +11,15 @@ const message = useMessage()
 const formRef = ref(null)
 // 表单数据对象，包含用户注册所需信息
 const formValue = ref({
-	// username: '',
-	email: '',
-	password: '',
-	confirmPassword: '',
-	// verifyCode: ''
+  username: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  // verifyCode: ''
 })
 
 // 表单验证状态变量
+let usernameValid = false // 用户名格式是否有效
 let emailValid = false // 邮箱格式是否有效
 let passwordValid = false // 密码是否符合强度要求
 let confirmPasswordValid = false // 两次密码是否一致
@@ -28,11 +29,11 @@ let confirmPasswordValid = false // 两次密码是否一致
  * 包含对邮箱、密码格式的验证，以及确认密码的一致性检查
  */
 const rules = {
-  // username: { // 用户名验证规则（当前未启用）
-  // 	required: true,
-  // 	message: '请输入用户名',
-  // 	trigger: ['blur', 'input']
-  // },
+  username: { // 用户名验证规则（当前未启用）
+    required: true,
+    message: '请输入用户名',
+    trigger: ['blur', 'input']
+  },
   email: {
     required: true,
     message: '请输入正确的邮箱地址',
@@ -114,6 +115,7 @@ const handleRegister = async () => {
   try {
     // 调用注册API
     await register({
+      username: formValue.value.username,
       email: formValue.value.email,
       password: formValue.value.password
     })
@@ -144,10 +146,10 @@ const handleRegister = async () => {
           <NForm ref="formRef" :model="formValue" label-placement="left" label-width="0"
             require-mark-placement="right-hanging" :rules="rules">
             <!-- 用户名输入项（当前未启用） -->
-            <!-- <NFormItem path="username">
-							<NInput v-model:value="formValue.username" placeholder="用户名" size="large"
-								:input-el-style="{ textAlign: 'center', paddingRight: '12px' }" />
-						</NFormItem> -->
+            <NFormItem path="username">
+              <NInput v-model:value="formValue.username" placeholder="用户名" size="large"
+                :input-el-style="{ textAlign: 'center', paddingRight: '12px' }" />
+            </NFormItem>
             <!-- 邮箱输入项 -->
             <NFormItem path="email">
               <NInput v-model:value="formValue.email" placeholder="邮箱" size="large"
@@ -177,6 +179,10 @@ const handleRegister = async () => {
             <div class="form-actions">
               <NButton type="primary" size="large" block @click="handleRegister">注册</NButton>
             </div>
+            <!-- 跳转链接区域 -->
+            <div class="form-links">
+              <p class="link-text">已有账号？<router-link to="/login" class="link">立即登录</router-link></p>
+            </div>
           </NForm>
         </NCard>
       </div>
@@ -184,7 +190,7 @@ const handleRegister = async () => {
       <div class="login-right">
         <div class="brand-content">
           <h1 class="brand-title">Hyacinth</h1>
-          <p class="brand-description">您的智能助手，为您提供更好的服务体验</p>
+          <p class="brand-description">构建您的专属网络，连接无限可能</p>
         </div>
       </div>
     </div>
@@ -252,6 +258,30 @@ const handleRegister = async () => {
 /* 表单按钮区域样式 */
 .form-actions {
   margin-top: 32px;
+}
+
+/* 跳转链接区域样式 */
+.form-links {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.link-text {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.link {
+  color: #6366f1;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.link:hover {
+  color: #4f46e5;
+  text-decoration: underline;
 }
 
 /* 右侧品牌介绍区域样式，使用渐变背景 */

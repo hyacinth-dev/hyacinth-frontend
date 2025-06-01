@@ -7,29 +7,37 @@ import { NCard, NSpace, NText } from 'naive-ui'
     <h2>关于</h2>
     <NSpace vertical size="large">
       <NCard title="系统介绍">
-        <NText>Hyacinth 是一个现代化的隧道管理系统，为用户提供安全、稳定、高效的网络隧道服务。</NText>
+        <NText>Hyacinth 是一个基于 Easytier 的组网管理系统，为用户提供安全、稳定、高效的组网服务。</NText>
       </NCard>
 
       <NCard title="功能特点">
         <ul class="feature-list">
-          <li>支持多种隧道类型（TCP、HTTP等）</li>
+          <li>高效的组网性能</li>
           <li>实时流量监控和统计</li>
           <li>灵活的套餐选择</li>
           <li>完善的技术支持</li>
           <li>安全的数据传输</li>
         </ul>
       </NCard>
+      <NCard title="使用指南">
+        <NText>
+          详细的使用指南和文档请访问：
+          <a href="https://github.com/hyacinth-dev/hyacinth-docs" target="_blank" rel="noopener noreferrer">
+            https://github.com/hyacinth-dev/hyacinth-docs
+          </a>
+        </NText>
+      </NCard>
 
       <NCard title="联系我们">
         <div class="contact-info">
-          <p><strong>邮箱：</strong>support@hyacinth.com</p>
-          <p><strong>技术支持：</strong>工作日 9:00-18:00</p>
+          <p>邮箱：support@hyacinth.com</p>
+          <p>技术支持：工作日 9:00-18:00</p>
         </div>
       </NCard>
 
       <NCard title="版本信息">
         <p>当前版本：v1.0.0</p>
-        <p>更新日期：2024-01-01</p>
+        <p>更新日期：2025-06-01</p>
       </NCard>
     </NSpace>
   </div>

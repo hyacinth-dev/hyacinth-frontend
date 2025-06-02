@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NDataTable, NButton, NSpace, NCard, NModal, NForm, NFormItem, NInput, NInputNumber, NSwitch, NText, useMessage } from 'naive-ui'
+import { NDataTable, NButton, NSpace, NCard, NModal, NForm, NFormItem, NInput, NInputNumber, NSwitch, NText, useMessage, FormRules, FormInst } from 'naive-ui'
 import { h, ref, onMounted } from 'vue'
 import { getVNetList, createVNet, updateVNet, deleteVNet, getVNetLimitInfo, type VNetData, type CreateVNetRequest, type UpdateVNetRequest, type VNetLimitInfo } from '../../api/vnet'
 import TrafficChart from '../../components/TrafficChart.vue'
@@ -62,6 +62,7 @@ const columns = [
 const showNetworkModal = ref(false)
 const isEditing = ref(false)
 const editingVnetId = ref('')
+const networkFormRef = ref<FormInst | null>(null)
 
 const networkForm = ref({
   comment: '',
@@ -73,6 +74,66 @@ const networkForm = ref({
   clientsLimit: 10,
   enabled: true
 })
+
+// 表单验证规则
+const networkFormRules: FormRules = {
+  token: {
+    required: true,
+    message: '请输入名称（3-50位字母、数字或下划线）',
+    trigger: ['blur', 'input'],
+    validator: (_rule: any, value: string) => {
+      if (!value) return false
+      const tokenRegex = /^[a-zA-Z0-9_]{3,50}$/
+      return tokenRegex.test(value)
+    }
+  },
+  password: {
+    required: true,
+    message: '请输入密码（3-50位字母、数字或下划线）',
+    trigger: ['blur', 'input'],
+    validator: (_rule: any, value: string) => {
+      if (!value) return false
+      const passwordRegex = /^[a-zA-Z0-9_]{3,50}$/
+      return passwordRegex.test(value)
+    }
+  },
+  comment: {
+    message: '备注长度不能超过100个字符',
+    trigger: ['blur', 'input'],
+    validator: (_rule: any, value: string) => {
+      if (!value) return true // 可选字段
+      return value.length <= 100
+    }
+  },
+  ipAddress: {
+    required: true,
+    message: '请输入有效的IP地址',
+    trigger: ['blur', 'input'],
+    validator: (_rule: any, value: string) => {
+      if (!networkForm.value.enableDHCP) return true // DHCP关闭时不验证
+      if (!value) return false
+      return validateIpAddress(value)
+    }
+  },
+  cidr: {
+    required: true,
+    message: 'CIDR值必须在8-30之间',
+    trigger: ['blur', 'change'],
+    validator: (_rule: any, value: number) => {
+      if (!networkForm.value.enableDHCP) return true // DHCP关闭时不验证
+      return value >= 8 && value <= 30
+    }
+  },
+  clientsLimit: {
+    required: true,
+    message: '最大连接数必须是大于0的数字',
+    trigger: ['blur', 'change'],
+    validator: (_rule: any, value: number) => {
+      if (!value || value <= 0) return false
+      return true
+    }
+  }
+}
 
 // 获取虚拟网络列表
 const fetchVNetworks = async () => {
@@ -108,53 +169,6 @@ onMounted(() => {
 
 // 表单验证函数
 const validateForm = (): boolean => {
-  // 验证Token
-  if (!networkForm.value.token.trim()) {
-    message.error('Token不能为空')
-    return false
-  }
-  if (networkForm.value.token.length > 50) {
-    message.error('Token长度不能超过50个字符')
-    return false
-  }
-
-  // 验证密码
-  if (!networkForm.value.password.trim()) {
-    message.error('密码不能为空')
-    return false
-  }
-  if (networkForm.value.password.length > 50) {
-    message.error('密码长度不能超过50个字符')
-    return false
-  }
-
-  // 验证备注长度
-  if (networkForm.value.comment && networkForm.value.comment.length > 100) {
-    message.error('备注长度不能超过100个字符')
-    return false
-  }
-  // 验证IP地址格式（仅在DHCP开启时验证）
-  if (networkForm.value.enableDHCP) {
-    if (!networkForm.value.ipAddress.trim()) {
-      message.error('IP地址不能为空')
-      return false
-    }
-    if (!validateIpAddress(networkForm.value.ipAddress)) {
-      message.error('请输入有效的IP地址格式')
-      return false
-    }
-
-    // 验证CIDR范围
-    if (networkForm.value.cidr < 8 || networkForm.value.cidr > 30) {
-      message.error('CIDR值必须在8-30之间')
-      return false
-    }
-  }// 验证最大连接数
-  if (!networkForm.value.clientsLimit || networkForm.value.clientsLimit <= 0) {
-    message.error('最大连接数必须是大于0的数字')
-    return false
-  }
-
   // 根据用户权限验证最大连接数
   if (limitInfo.value) {
     const maxAllowed = limitInfo.value.maxClientsLimitPerVNet
@@ -163,13 +177,20 @@ const validateForm = (): boolean => {
       return false
     }
   }
-
   return true
 }
 
 const handleCreateNetwork = async () => {
   try {
     // 表单验证
+    await networkFormRef.value?.validate()
+  }
+  catch (error) {
+    console.error('表单验证失败:', error)
+    message.error('请检查表单输入是否正确')
+    return
+  }
+  try {
     if (!validateForm()) {
       return
     }
@@ -203,16 +224,7 @@ const handleCreateNetwork = async () => {
     showNetworkModal.value = false
   } catch (error) {
     console.error('操作虚拟网络失败:', error)
-    const errorMessage = (error as any).response?.data?.message || '未知错误'
-
-    // 针对虚拟网络限制超出的特殊处理
-    if (errorMessage.includes('Virtual network limit exceeded')) {
-      message.error('虚拟网络数量已达到您当前权限等级的上限，请升级套餐以创建更多网络')
-    } else if (errorMessage.includes('VNet clients limit would be exceeded')) {
-      message.error('最大连接数超过您当前权限等级的限制，请升级套餐或减少连接数')
-    } else {
-      message.error('操作失败：' + errorMessage)
-    }
+    message.error('操作失败：' + (error as any).response?.data?.message || '未知错误')
   }
 }
 
@@ -246,7 +258,8 @@ const openEditModal = (vnet: VNetData) => {
     comment: vnet.comment,
     token: vnet.token,
     password: vnet.password,
-    ipAddress: ipAddress, cidr: cidr,
+    ipAddress: ipAddress,
+    cidr: cidr,
     enableDHCP: vnet.enableDHCP,
     clientsLimit: vnet.clientsLimit,
     enabled: vnet.enabled
@@ -307,20 +320,21 @@ const toggleStats = (vnetId: string) => {
     </NCard><!-- 新建/编辑虚拟网络配置窗口 -->
     <NModal v-model:show="showNetworkModal" :title="isEditing ? '编辑虚拟网络' : '新建虚拟网络'" preset="dialog"
       :mask-closable="false">
-      <NForm :model="networkForm" label-placement="left" label-width="100px">
-        <NFormItem label="Token" required>
+      <NForm ref="networkFormRef" :model="networkForm" :rules="networkFormRules" label-placement="left"
+        label-width="100px">
+        <NFormItem label="网络名称" path="token" required>
           <NInput v-model:value="networkForm.token" maxlength="50" show-count clearable placeholder="需唯一且不与其他用户重复" />
         </NFormItem>
-        <NFormItem label="密码" required>
+        <NFormItem label="网络密码" path="password" required>
           <NInput v-model:value="networkForm.password" maxlength="50" show-count clearable placeholder="请输入密码" />
         </NFormItem>
-        <NFormItem label="备注">
+        <NFormItem label="备注" path="comment">
           <NInput v-model:value="networkForm.comment" placeholder="请输入备注（可选）" maxlength="100" show-count clearable />
         </NFormItem>
         <NFormItem label="开启DHCP">
           <NSwitch v-model:value="networkForm.enableDHCP" />
         </NFormItem>
-        <NFormItem :label="'分配IP段'" :required="networkForm.enableDHCP">
+        <NFormItem :label="'分配IP段'" path="ipAddress" :required="networkForm.enableDHCP">
           <NSpace align="center" :wrap="false">
             <NInput v-model:value="networkForm.ipAddress" :disabled="!networkForm.enableDHCP"
               placeholder="例如: 192.168.1.0" style="flex: 1" />
@@ -329,7 +343,7 @@ const toggleStats = (vnetId: string) => {
               :step="1" style="width: 80px" />
           </NSpace>
         </NFormItem>
-        <NFormItem label="最大连接数" required>
+        <NFormItem label="最大连接数" path="clientsLimit" required>
           <NInputNumber v-model:value="networkForm.clientsLimit" />
         </NFormItem>
         <NFormItem label="启用状态">

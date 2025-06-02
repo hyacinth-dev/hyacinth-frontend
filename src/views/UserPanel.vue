@@ -46,7 +46,6 @@ onMounted(() => {
 
   // 获取用户信息
   fetchUserInfo()
-
   // 根据用户角色（管理员/普通用户）设置不同的导航菜单
   const isAdmin = localStorage.getItem('isAdmin')
   if (isAdmin === 'true') {
@@ -63,7 +62,6 @@ onMounted(() => {
         icon: () => h(CartOutline)
       },
     ]
-    activeKey.value = '/admin/dashboard'
   }
   else {
     // 普通用户菜单选项
@@ -89,7 +87,16 @@ onMounted(() => {
         icon: () => h(InformationCircleOutline)
       }
     ]
-    activeKey.value = '/user/dashboard'
+  }
+
+  // 根据当前路由动态设置激活的菜单项
+  const currentRoute = router.currentRoute.value.path
+  const menuKeys = menuOptions.map(option => option.key)
+  if (menuKeys.includes(currentRoute)) {
+    activeKey.value = currentRoute
+  } else {
+    // 如果当前路由不在菜单中，设置默认值
+    activeKey.value = isAdmin === 'true' ? '/admin/dashboard' : '/user/dashboard'
   }
 })
 
@@ -146,7 +153,8 @@ const handleUpdateValue = (key: string) => {
           @update:value="handleUpdateValue" />
 
         <!-- 用户信息区域，显示在侧边栏底部 -->
-        <div class="user-profile">          <NDropdown :options="dropdownOptions" @select="handleSelect">
+        <div class="user-profile">
+          <NDropdown :options="dropdownOptions" @select="handleSelect">
             <NSpace align="center">
               <NAvatar round :size="32" :src="userInfo.avatar" />
               <span class="username">{{ userInfo.username }}</span>
@@ -180,12 +188,14 @@ const handleUpdateValue = (key: string) => {
   /* 将用户信息推到底部 */
   padding: 16px;
   border-top: 1px solid var(--n-border-color);
-  /* 顶部分隔线 */  cursor: pointer;
+  /* 顶部分隔线 */
+  cursor: pointer;
 }
 
 /* 用户名称文本样式 */
 .username {
   font-size: 14px;
-  color: var(--n-text-color); /* 使用主题变量，支持暗黑模式 */
+  color: var(--n-text-color);
+  /* 使用主题变量，支持暗黑模式 */
 }
 </style>

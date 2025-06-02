@@ -21,7 +21,7 @@ interface CustomAxiosInstance extends AxiosInstance {
  * 配置基础URL、超时时间和默认请求头
  */
 const service = axios.create({
-	baseURL: 'http://localhost:8000/v1',
+	baseURL: 'https://hyacinth-backend.baka9.vip/v1',
 	timeout: 15000,
 	headers: {
 		'Content-Type': 'application/json'

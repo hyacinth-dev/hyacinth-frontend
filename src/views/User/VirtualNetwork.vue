@@ -190,7 +190,7 @@ const handleCreateNetwork = async () => {
     if (isEditing.value) {
       // 更新现有虚拟网络
       await updateVNet(editingVnetId.value, requestData)
-      message.success('更新虚拟网络成功')
+      message.success('更新虚拟网络成功，服务器可能需要一段时间来应用更改')
       await fetchVNetworks() // 重新获取列表
       await fetchVNetLimitInfo() // 重新获取限制信息
     } else {

@@ -5,11 +5,11 @@ import { NCard, NForm, NFormItem, NInput, NButton, useMessage, NSpace } from 'na
 import { register } from '../api/auth'
 
 const router = useRouter()
-// 消息提示实例，用于显示注册过程中的反馈信息
+
 const message = useMessage()
-// 表单引用，用于表单验证
+
 const formRef = ref(null)
-// 表单数据对象，包含用户注册所需信息
+
 const formValue = ref({
   username: '',
   email: '',
@@ -29,10 +29,15 @@ let confirmPasswordValid = false // 两次密码是否一致
  * 包含对邮箱、密码格式的验证，以及确认密码的一致性检查
  */
 const rules = {
-  username: { // 用户名验证规则（当前未启用）
+  username: { // 用户名验证规则
     required: true,
-    message: '请输入用户名',
-    trigger: ['blur', 'input']
+    message: '请输入用户名（3-20位字母、数字或下划线）',
+    trigger: ['blur', 'input'],
+    validator: (_rule: any, value: string) => {
+      if (!value) return false
+      const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
+      return usernameValid = usernameRegex.test(value) // 同时更新状态变量
+    }
   },
   email: {
     required: true,
@@ -72,35 +77,35 @@ const rules = {
 }
 
 // 发送验证码相关状态变量（当前验证码功能未启用）
-const sendingCode = ref(false) // 是否正在发送验证码
-const countdown = ref(0) // 验证码倒计时
+// const sendingCode = ref(false) // 是否正在发送验证码
+// const countdown = ref(0) // 验证码倒计时
 
 /**
  * 处理发送验证码
  * 向用户邮箱发送验证码并启动倒计时
  * 注：当前功能未启用
  */
-const handleSendCode = async () => {
-  if (sendingCode.value || countdown.value > 0) return
-  try {
-    sendingCode.value = true
-    // TODO: 实现发送验证码的API调用
-    // await sendVerifyCode(formValue.value.email)
-    message.success('验证码已发送')
-    countdown.value = 60
-    const timer = setInterval(() => {
-      if (countdown.value > 0) {
-        countdown.value--
-      } else {
-        clearInterval(timer)
-      }
-    }, 1000)
-  } catch (error) {
-    message.error('发送验证码失败：' + ((error as any).message || '未知错误'))
-  } finally {
-    sendingCode.value = false
-  }
-}
+// const handleSendCode = async () => {
+//   if (sendingCode.value || countdown.value > 0) return
+//   try {
+//     sendingCode.value = true
+//     // TODO: 实现发送验证码的API调用
+//     // await sendVerifyCode(formValue.value.email)
+//     message.success('验证码已发送')
+//     countdown.value = 60
+//     const timer = setInterval(() => {
+//       if (countdown.value > 0) {
+//         countdown.value--
+//       } else {
+//         clearInterval(timer)
+//       }
+//     }, 1000)
+//   } catch (error) {
+//     message.error('发送验证码失败：' + ((error as any).message || '未知错误'))
+//   } finally {
+//     sendingCode.value = false
+//   }
+// }
 
 /**
  * 处理用户注册
@@ -108,8 +113,8 @@ const handleSendCode = async () => {
  */
 const handleRegister = async () => {
   // 最终验证，确保所有字段都符合要求
-  if (!emailValid || !passwordValid || !confirmPasswordValid) {
-    message.error('请检查输入的邮箱和密码是否符合要求')
+  if (!usernameValid || !emailValid || !passwordValid || !confirmPasswordValid) {
+    message.error('请检查注册信息是否符合要求')
     return
   }
   try {
@@ -123,7 +128,7 @@ const handleRegister = async () => {
     router.push('/login')
   } catch (error) {
     console.log(error)
-    // 显示注册失败消息，包含后端返回的具体错误原因
+
     message.error('注册失败：' + ((error as any).response.data.message || '未知错误'))
   }
 }

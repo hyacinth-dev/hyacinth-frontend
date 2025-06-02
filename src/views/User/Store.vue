@@ -32,7 +32,7 @@ const products = ref([
     packageType: 1, // 对应后端的普通用户
     name: '免费套餐',
     price: '免费',
-    features: ['1个虚拟网络', '最大3人同时在线', '10GB流量/月', '无技术支持'],
+    features: ['1个虚拟网络', '最大3人同时在线', '5GB流量/月', '无技术支持'],
     popular: false,
     isFree: true
   },

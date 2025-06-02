@@ -20,15 +20,17 @@ const formValue = ref({
  * 包含对邮箱格式的验证
  */
 const rules = {
-	email: {
+	usernameOrEmail: {
 		required: true,
-		message: '请输入用户名或邮箱',
+		message: '请输入合法的用户名或邮箱',
 		trigger: ['blur', 'input'],
 		validator: (_rule: any, value: string) => {
-			return true
 			if (!value) return false
 			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-			return emailRegex.test(value)
+			if (emailRegex.test(value)) return true
+			const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
+			if (usernameRegex.test(value)) return true
+			return false
 		}
 	}
 }
@@ -76,7 +78,7 @@ const handleLogin = async () => {
 					<NForm ref="formRef" :model="formValue" label-placement="left" label-width="0"
 						require-mark-placement="right-hanging" :rules="rules">
 						<!-- 邮箱输入项 -->
-						<NFormItem path="email">
+						<NFormItem path="usernameOrEmail">
 							<NInput v-model:value="formValue.usernameOrEmail" placeholder="用户名或邮箱" size="large"
 								:input-el-style="{ textAlign: 'center', paddingRight: '12px' }" />
 						</NFormItem>

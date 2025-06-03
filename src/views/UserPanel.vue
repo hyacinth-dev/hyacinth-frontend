@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { NLayout, NLayoutContent, NLayoutSider, NMenu, NAvatar, NDropdown, NSpace } from 'naive-ui'
-import { h, ref, onMounted } from 'vue'
+import { h, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { MenuOption, DropdownOption } from 'naive-ui'
 import { StatsChartOutline, SwapHorizontalOutline, CartOutline, InformationCircleOutline } from '@vicons/ionicons5'
@@ -113,6 +113,25 @@ const handleSelect = (key: string) => {
 // 当前激活的导航菜单项，用于高亮显示当前页面
 const activeKey = ref('')
 
+// 侧边栏折叠状态
+const collapsed = ref(false)
+
+// 控制用户名显示，只在动画完成后显示
+const showUsername = ref(true)
+
+// 监听侧边栏折叠状态变化，控制用户名显示时机
+watch(collapsed, (newCollapsed) => {
+  if (newCollapsed) {
+    // 折叠时立即隐藏用户名
+    showUsername.value = false
+  } else {
+    // 展开时延迟显示用户名，等待动画完成
+    setTimeout(() => {
+      showUsername.value = true
+    }, 100)
+  }
+})
+
 /**
  * 处理导航菜单项点击事件
  * @param key - 所选导航项的路由路径
@@ -124,9 +143,9 @@ const handleUpdateValue = (key: string) => {
 
 <template>
   <!-- 整体布局容器，包含侧边栏和内容区 -->
-  <NLayout style="width: 100%; height: 100%;" has-sider>
-    <!-- 侧边导航栏 -->
-    <NLayoutSider bordered collapse-mode="width" :collapsed-width="64" :width="240" show-trigger>
+  <NLayout style="width: 100%; height: 100%;" has-sider> <!-- 侧边导航栏 -->
+    <NLayoutSider bordered collapse-mode="width" :collapsed-width="64" :width="240" show-trigger
+      v-model:collapsed="collapsed">
       <div class="sider-content">
         <!-- 导航菜单 -->
         <NMenu v-model:value="activeKey" :options="menuOptions" :collapsed-width="64" :collapsed-icon-size="22"
@@ -137,7 +156,7 @@ const handleUpdateValue = (key: string) => {
           <NDropdown :options="dropdownOptions" @select="handleSelect">
             <NSpace align="center">
               <NAvatar round :size="32" :src="userInfo.avatar" />
-              <span class="username">{{ userInfo.username }}</span>
+              <span class="username" v-if="!collapsed && showUsername">{{ userInfo.username }}</span>
             </NSpace>
           </NDropdown>
         </div>

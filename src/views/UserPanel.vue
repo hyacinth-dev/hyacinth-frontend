@@ -43,52 +43,32 @@ onMounted(() => {
     router.push('/login')
     return
   }
-
   // 获取用户信息
   fetchUserInfo()
-  // 根据用户角色（管理员/普通用户）设置不同的导航菜单
-  const isAdmin = localStorage.getItem('isAdmin')
-  if (isAdmin === 'true') {
-    // 管理员菜单选项
-    menuOptions = [
-      {
-        label: '仪表盘',
-        key: '/admin/dashboard',
-        icon: () => h(StatsChartOutline)
-      },
-      {
-        label: '用户管理',
-        key: '/admin/user-control',
-        icon: () => h(CartOutline)
-      },
-    ]
-  }
-  else {
-    // 普通用户菜单选项
-    menuOptions = [
-      {
-        label: '仪表盘',
-        key: '/user/dashboard',
-        icon: () => h(StatsChartOutline)
-      },
-      {
-        label: '虚拟网络',
-        key: '/user/vnetwork',
-        icon: () => h(SwapHorizontalOutline)
-      },
-      {
-        label: '商城',
-        key: '/user/store',
-        icon: () => h(CartOutline)
-      },
-      {
-        label: '关于',
-        key: '/user/about',
-        icon: () => h(InformationCircleOutline)
-      }
-    ]
-  }
 
+  // 设置普通用户菜单选项
+  menuOptions = [
+    {
+      label: '仪表盘',
+      key: '/user/dashboard',
+      icon: () => h(StatsChartOutline)
+    },
+    {
+      label: '虚拟网络',
+      key: '/user/vnetwork',
+      icon: () => h(SwapHorizontalOutline)
+    },
+    {
+      label: '商城',
+      key: '/user/store',
+      icon: () => h(CartOutline)
+    },
+    {
+      label: '关于',
+      key: '/user/about',
+      icon: () => h(InformationCircleOutline)
+    }
+  ]
   // 根据当前路由动态设置激活的菜单项
   const currentRoute = router.currentRoute.value.path
   const menuKeys = menuOptions.map(option => option.key)
@@ -96,7 +76,7 @@ onMounted(() => {
     activeKey.value = currentRoute
   } else {
     // 如果当前路由不在菜单中，设置默认值
-    activeKey.value = isAdmin === 'true' ? '/admin/dashboard' : '/user/dashboard'
+    activeKey.value = '/user/dashboard'
   }
 })
 

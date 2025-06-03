@@ -46,15 +46,10 @@ const handleLogin = async () => {
 		console.log(res)
 		// 保存认证信息到本地存储
 		localStorage.setItem('token', res.data.accessToken)
-		localStorage.setItem('isAdmin', res.data.isAdmin.toString())
 		// 显示登录成功消息
 		message.success('登录成功')
-		// 根据用户角色跳转到不同的仪表盘页面
-		if (res.data.isAdmin) {
-			router.push('/admin/dashboard')
-		} else {
-			router.push('/user/dashboard')
-		}
+		// 跳转到用户仪表盘页面
+		router.push('/user/dashboard')
 	} catch (error) {
 		message.error('用户名或密码错误')
 	}

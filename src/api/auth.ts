@@ -28,7 +28,6 @@ export interface RegisterParams {
  */
 export interface LoginResponseData {
   accessToken: string
-  isAdmin: boolean
 }
 
 /**
@@ -85,18 +84,15 @@ export interface ChangePasswordParams {
  * @param data - 登录参数，包含邮箱和密码
  * @returns Promise - 返回登录结果，包含访问令牌和用户角色信息
  */
-export function login(data: LoginParams): Promise<ApiResult<LoginResponseData>> {
-  // 注释掉的模拟数据，可用于开发阶段测试
+export function login(data: LoginParams): Promise<ApiResult<LoginResponseData>> {  // 注释掉的模拟数据，可用于开发阶段测试
   // return Promise.resolve({
   //   code: 200,
   //   data: {
   //     accessToken: '123456789',
-  //     isAdmin: true,
   //   },
   //   message: 'success',
   // })
 
-  // 向后端发送POST请求，路径为/login
   return request.post<ApiResult<LoginResponseData>>('/login', data)
 }
 

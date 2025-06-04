@@ -54,10 +54,10 @@ const rules = {
   },
   password: {
     required: true,
-    message: '请输出合法的密码（至少8位，包含字母和数字）',
+    message: '请输出合法的密码（8-20位，包含字母和数字）',
     trigger: ['blur', 'input'],
     validator: (_rule: any, value: string) => {
-      const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/
+      const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)\S{8,20}$/
       return passwordValid = passwordRegex.test(value)
     }
   },
@@ -117,7 +117,7 @@ const rules = {
 const handleRegister = async () => {
   // 防止重复点击
   if (registerLoading.value) return
-  
+
   // 最终验证，确保所有字段都符合要求
   if (!usernameValid || !emailValid || !passwordValid || !confirmPasswordValid) {
     message.error('请检查注册信息是否符合要求')
@@ -136,7 +136,7 @@ const handleRegister = async () => {
   } catch (error) {
     console.log(error)
 
-    message.error('注册失败：' + ((error as any).response.data.message || '未知错误'))
+    message.error('注册失败：' + ((error as any).response?.data?.message || '未知错误'))
   } finally {
     // 延迟恢复按钮状态，防止重复点击
     setTimeout(() => {
@@ -191,7 +191,8 @@ const handleRegister = async () => {
 									{{ countdown > 0 ? `${countdown}s后重试` : '发送验证码' }}
 								</NButton>
 							</NSpace>
-						</NFormItem> -->            <!-- 注册按钮区域 -->
+						</NFormItem> -->
+            <!-- 注册按钮区域 -->
             <div class="form-actions">
               <NButton type="primary" size="large" block :loading="registerLoading" @click="handleRegister">
                 {{ registerLoading ? '注册中...' : '注册' }}

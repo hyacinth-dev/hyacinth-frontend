@@ -86,16 +86,6 @@ const isCurrentPackage = computed(() => {
   }
 })
 
-// 检查是否允许购买（现在允许降级）
-const canPurchase = computed(() => {
-  return (packageType: number) => {
-    // 免费套餐不显示购买按钮
-    if (packageType === 1) return false
-    // 允许购买任何非免费套餐
-    return true
-  }
-})
-
 // 打开购买对话框
 const openPurchaseModal = (product: any) => {
   // 如果用户当前有非免费套餐，且不是购买同样的套餐，显示确认对话框
@@ -187,10 +177,10 @@ const handlePurchase = async (packageType: number) => {
         }
 
         // 检查是否有虚拟网络超过新套餐的在线人数限制
-        const exceededVnets = vnets.filter(vnet => vnet.clientsLimit > newMaxClientsLimit)
+        const exceededVnets = vnets.filter(vnet => vnet.enabled && vnet.clientsLimit > newMaxClientsLimit)
         if (exceededVnets.length > 0) {
           const vnetNames = exceededVnets.map(vnet => vnet.comment || vnet.token).join('、')
-          message.error(`无法降级：虚拟网络 [${vnetNames}] 的最大连接数设置超过了目标套餐限制(${newMaxClientsLimit})。请先调整这些虚拟网络的最大连接数后再购买。`)
+          message.error(`无法降级：已启用的虚拟网络 [${vnetNames}] 的最大连接数设置超过了目标套餐限制(${newMaxClientsLimit})。请先调整这些虚拟网络的最大连接数后再购买。`)
           return
         }
       } catch (vnetError) {
@@ -250,26 +240,10 @@ onMounted(() => {
           <ul class="product-features">
             <li v-for="feature in product.features" :key="feature">{{ feature }}</li>
           </ul> <template #footer>
-            <!-- 加载中状态 -->
-            <NButton v-if="loading" block disabled :loading="true">
-
-            </NButton> <!-- 用户组信息加载完成后再渲染按钮 -->
-            <template v-else-if="userGroup !== null">
-              <!-- 免费套餐不显示按钮 -->
-              <template v-if="product.packageType === 1">
-                <!-- 不显示任何按钮 -->
-              </template>
-              <!-- 当前套餐显示续费 -->
-              <NButton v-else-if="isCurrentPackage(product.packageType)" type="primary" block :loading="purchasing"
-                @click="openPurchaseModal(product)">
-                {{ purchasing ? '购买中...' : '续费' }}
-              </NButton>
-              <!-- 可以购买的套餐 -->
-              <NButton v-else-if="canPurchase(product.packageType)" type="primary" block :loading="purchasing"
-                @click="openPurchaseModal(product)">
-                {{ purchasing ? '购买中...' : '立即购买' }}
-              </NButton>
-            </template>
+            <NButton v-if="product.packageType !== 1 && !loading && userGroup !== null" type="primary" block
+              :loading="purchasing" @click="openPurchaseModal(product)">
+              {{ purchasing ? '购买中...' : isCurrentPackage(product.packageType) ? '续费' : '立即购买' }}
+            </NButton>
           </template>
         </NCard>
       </NGridItem>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { NCard, NForm, NFormItem, NInput, NButton, useMessage, NSpace } from 'naive-ui'
+import { NCard, NForm, NFormItem, NInput, NButton, useMessage } from 'naive-ui'
 import { register } from '../api/auth'
 
 const router = useRouter()
@@ -9,6 +9,9 @@ const router = useRouter()
 const message = useMessage()
 
 const formRef = ref(null)
+
+// 注册按钮加载状态，防止重复点击
+const registerLoading = ref(false)
 
 const formValue = ref({
   username: '',
@@ -41,11 +44,11 @@ const rules = {
   },
   email: {
     required: true,
-    message: '请输入正确的邮箱地址',
+    message: '请输入正确的邮箱地址（不能包含中文或部分特殊字符）',
     trigger: ['blur', 'input'],
     validator: (_rule: any, value: string) => {
       if (!value) return false
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      const emailRegex = /^([A-Za-z0-9_\-\.])+\@([A-Za-z0-9_\-\.])+\.([A-Za-z]{2,4})$/
       return emailValid = emailRegex.test(value) // 同时更新状态变量
     }
   },
@@ -112,12 +115,16 @@ const rules = {
  * 验证用户输入并向后端发送注册请求
  */
 const handleRegister = async () => {
+  // 防止重复点击
+  if (registerLoading.value) return
+  
   // 最终验证，确保所有字段都符合要求
   if (!usernameValid || !emailValid || !passwordValid || !confirmPasswordValid) {
     message.error('请检查注册信息是否符合要求')
     return
   }
   try {
+    registerLoading.value = true
     // 调用注册API
     await register({
       username: formValue.value.username,
@@ -130,6 +137,11 @@ const handleRegister = async () => {
     console.log(error)
 
     message.error('注册失败：' + ((error as any).response.data.message || '未知错误'))
+  } finally {
+    // 延迟恢复按钮状态，防止重复点击
+    setTimeout(() => {
+      registerLoading.value = false
+    }, 1000)
   }
 }
 </script>
@@ -179,10 +191,11 @@ const handleRegister = async () => {
 									{{ countdown > 0 ? `${countdown}s后重试` : '发送验证码' }}
 								</NButton>
 							</NSpace>
-						</NFormItem> -->
-            <!-- 注册按钮区域 -->
+						</NFormItem> -->            <!-- 注册按钮区域 -->
             <div class="form-actions">
-              <NButton type="primary" size="large" block @click="handleRegister">注册</NButton>
+              <NButton type="primary" size="large" block :loading="registerLoading" @click="handleRegister">
+                {{ registerLoading ? '注册中...' : '注册' }}
+              </NButton>
             </div>
             <!-- 跳转链接区域 -->
             <div class="form-links">

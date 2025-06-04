@@ -63,6 +63,8 @@ const showNetworkModal = ref(false)
 const isEditing = ref(false)
 const editingVnetId = ref('')
 const networkFormRef = ref<FormInst | null>(null)
+// 创建/更新虚拟网络按钮加载状态，防止重复点击
+const networkOperationLoading = ref(false)
 
 const networkForm = ref({
   comment: '',
@@ -181,6 +183,9 @@ const validateForm = (): boolean => {
 }
 
 const handleCreateNetwork = async () => {
+  // 防止重复点击
+  if (networkOperationLoading.value) return
+  
   try {
     // 表单验证
     await networkFormRef.value?.validate()
@@ -191,6 +196,8 @@ const handleCreateNetwork = async () => {
     return
   }
   try {
+    networkOperationLoading.value = true
+    
     if (!validateForm()) {
       return
     }
@@ -225,6 +232,11 @@ const handleCreateNetwork = async () => {
   } catch (error) {
     console.error('操作虚拟网络失败:', error)
     message.error('操作失败：' + (error as any).response?.data?.message || '未知错误')
+  } finally {
+    // 延迟恢复按钮状态，防止重复点击
+    setTimeout(() => {
+      networkOperationLoading.value = false
+    }, 1000)
   }
 }
 
@@ -349,10 +361,9 @@ const toggleStats = (vnetId: string) => {
         <NFormItem label="启用状态">
           <NSwitch v-model:value="networkForm.enabled" />
         </NFormItem>
-      </NForm>
-      <template #action>
-        <NButton type="primary" @click="handleCreateNetwork">
-          {{ isEditing ? '更新' : '确认' }}
+      </NForm>      <template #action>
+        <NButton type="primary" :loading="networkOperationLoading" @click="handleCreateNetwork">
+          {{ networkOperationLoading ? (isEditing ? '更新中...' : '创建中...') : (isEditing ? '更新' : '确认') }}
         </NButton>
         <NButton class="ml-4" @click="showNetworkModal = false">取消</NButton>
       </template>

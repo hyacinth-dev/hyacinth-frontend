@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { NCard, NGrid, NGridItem, NButton, NTag, NModal, NButtonGroup, NSkeleton, useMessage } from 'naive-ui'
 import { ref, onMounted, computed } from 'vue'
-import { purchasePackage, getUserGroup, type UserGroupResponseData } from '../../api/auth'
+import { getUserGroup, type UserGroupResponseData } from '../../api/auth'
+import { purchasePackage } from '../../api/service'
 import { getVNetList, type VNetData } from '../../api/vnet'
 
 const message = useMessage()

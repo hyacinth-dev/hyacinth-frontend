@@ -9,6 +9,8 @@ const router = useRouter()
 const message = useMessage()
 // 表单引用，用于表单验证
 const formRef = ref(null)
+// 登录按钮加载状态，防止重复点击
+const loginLoading = ref(false)
 // 表单数据对象，包含用户输入的邮箱和密码
 const formValue = ref({
 	usernameOrEmail: '',
@@ -26,7 +28,7 @@ const rules = {
 		trigger: ['blur', 'input'],
 		validator: (_rule: any, value: string) => {
 			if (!value) return false
-			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+			const emailRegex = /^([A-Za-z0-9_\-\.])+\@([A-Za-z0-9_\-\.])+\.([A-Za-z]{2,4})$/
 			if (emailRegex.test(value)) return true
 			const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
 			if (usernameRegex.test(value)) return true
@@ -40,7 +42,11 @@ const rules = {
  * 向后端发送登录请求，并根据响应进行相应处理
  */
 const handleLogin = async () => {
+	// 防止重复点击
+	if (loginLoading.value) return
+	
 	try {
+		loginLoading.value = true
 		// 调用登录API
 		const res = await login(formValue.value)
 		console.log(res)
@@ -52,6 +58,11 @@ const handleLogin = async () => {
 		router.push('/user/dashboard')
 	} catch (error) {
 		message.error('用户名或密码错误')
+	} finally {
+		// 延迟恢复按钮状态，防止重复点击
+		setTimeout(() => {
+			loginLoading.value = false
+		}, 1000)
 	}
 }
 </script>
@@ -82,10 +93,11 @@ const handleLogin = async () => {
 							<NInput v-model:value="formValue.password" type="password" placeholder="密码" size="large"
 								show-password-on="click"
 								:input-el-style="{ textAlign: 'center', paddingRight: '32px' }" />
-						</NFormItem>
-						<!-- 登录按钮区域 -->
+						</NFormItem>						<!-- 登录按钮区域 -->
 						<div class="form-actions">
-							<NButton type="primary" size="large" block @click="handleLogin">登录</NButton>
+							<NButton type="primary" size="large" block :loading="loginLoading" @click="handleLogin">
+								{{ loginLoading ? '登录中...' : '登录' }}
+							</NButton>
 						</div>
 						<!-- 跳转链接区域 -->
 						<div class="form-links">

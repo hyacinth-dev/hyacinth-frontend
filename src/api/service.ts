@@ -31,6 +31,14 @@ export interface GetUsageResponseData {
 }
 
 /**
+ * 购买套餐请求参数接口
+ */
+export interface PurchasePackageParams {
+	packageType: number // 2=青铜 3=白银 4=黄金
+	duration?: number   // 购买时长（月数），默认为1
+}
+
+/**
  * 获取用户使用量
  * 
  * @param params - 包含时间范围的参数对象
@@ -38,4 +46,14 @@ export interface GetUsageResponseData {
  */
 export function getUsage(params: GetUsageParams): Promise<ApiResult<GetUsageResponseData>> {
 	return request.get('/usage', { params })
+}
+
+/**
+ * 购买增值服务套餐
+ * 
+ * @param data - 购买参数，包含套餐类型
+ * @returns Promise - 返回购买结果
+ */
+export function purchasePackage(data: PurchasePackageParams): Promise<ApiResult<void>> {
+	return request.post('/user/purchase', data)
 }

@@ -44,7 +44,7 @@ const rules = {
 const handleLogin = async () => {
 	// 防止重复点击
 	if (loginLoading.value) return
-	
+
 	try {
 		loginLoading.value = true
 		// 调用登录API
@@ -93,7 +93,7 @@ const handleLogin = async () => {
 							<NInput v-model:value="formValue.password" type="password" placeholder="密码" size="large"
 								show-password-on="click"
 								:input-el-style="{ textAlign: 'center', paddingRight: '32px' }" />
-						</NFormItem>						<!-- 登录按钮区域 -->
+						</NFormItem> <!-- 登录按钮区域 -->
 						<div class="form-actions">
 							<NButton type="primary" size="large" block :loading="loginLoading" @click="handleLogin">
 								{{ loginLoading ? '登录中...' : '登录' }}

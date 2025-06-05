@@ -60,14 +60,10 @@ const loading = ref(false)
 const fetchUserInfo = async () => {
   try {
     const response = await getUserInfo()
-    if (response.code === 0) {
-      userInfo.value.email = response.data.email
-      userInfo.value.username = response.data.username
-      profileFormValue.value.username = response.data.username
-      profileFormValue.value.email = response.data.email
-    } else {
-      message.error(response.message || '获取用户信息失败')
-    }
+    userInfo.value.email = response.data.email
+    userInfo.value.username = response.data.username
+    profileFormValue.value.username = response.data.username
+    profileFormValue.value.email = response.data.email
   } catch (error) {
     message.error('获取用户信息失败')
     console.error('获取用户信息失败:', error)

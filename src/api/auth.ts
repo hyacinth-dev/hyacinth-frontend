@@ -53,13 +53,7 @@ export interface UserGroupResponseData {
   userGroup: number
 }
 
-/**
- * 购买套餐请求参数接口
- */
-export interface PurchasePackageParams {
-  packageType: number // 2=青铜 3=白银 4=黄金
-  duration?: number   // 购买时长（月数），默认为1
-}
+
 
 /**
  * 更新个人信息请求参数接口
@@ -137,15 +131,7 @@ export function logout() {
   return request.post('/logout')
 }
 
-/**
- * 购买增值服务套餐
- * 
- * @param data - 购买参数，包含套餐类型
- * @returns Promise - 返回购买结果
- */
-export function purchasePackage(data: PurchasePackageParams): Promise<ApiResult<void>> {
-  return request.post('/user/purchase', data)
-}
+
 
 /**
  * 更新个人信息方法

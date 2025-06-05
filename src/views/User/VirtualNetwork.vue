@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NDataTable, NButton, NSpace, NCard, NModal, NForm, NFormItem, NInput, NInputNumber, NSwitch, NText, useMessage, FormRules, FormInst } from 'naive-ui'
+import { NDataTable, NButton, NSpace, NCard, NModal, NForm, NFormItem, NInput, NInputNumber, NSwitch, NText, NInputGroup, useMessage, FormRules, FormInst } from 'naive-ui'
 import { h, ref, onMounted } from 'vue'
 import { getVNetList, createVNet, updateVNet, deleteVNet, getVNetLimitInfo, type VNetData, type CreateVNetRequest, type UpdateVNetRequest, type VNetLimitInfo } from '../../api/vnet'
 import TrafficChart from '../../components/TrafficChart.vue'
@@ -13,7 +13,7 @@ const limitInfo = ref<VNetLimitInfo | null>(null)
 // 统计展示相关状态
 const expandedStats = ref<Record<string, boolean>>({})
 
-// IP地址格式验证函数
+// IP地址格式验证
 const validateIpAddress = (ip: string): boolean => {
   const ipRegex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
   return ipRegex.test(ip)
@@ -183,9 +183,10 @@ const validateForm = (): boolean => {
 }
 
 const handleCreateNetwork = async () => {
-  // 防止重复点击
+  // 防止重复点击 - 立即设置加载状态
   if (networkOperationLoading.value) return
-  
+  networkOperationLoading.value = true
+
   try {
     // 表单验证
     await networkFormRef.value?.validate()
@@ -193,12 +194,11 @@ const handleCreateNetwork = async () => {
   catch (error) {
     console.error('表单验证失败:', error)
     message.error('请检查表单输入是否正确')
+    networkOperationLoading.value = false // 验证失败时重置状态
     return
-  }
-  try {
-    networkOperationLoading.value = true
-    
+  } try {
     if (!validateForm()) {
+      networkOperationLoading.value = false // validateForm失败时重置状态
       return
     }
 
@@ -306,6 +306,26 @@ const toggleStats = (vnetId: string) => {
     expandedStats.value[vnetId] = true
   }
 }
+
+// 生成随机字符串
+const generateRandomToken = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  networkForm.value.token = result
+}
+
+// 生成随机密码
+const generateRandomPassword = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  networkForm.value.password = result
+}
 </script>
 
 <template>
@@ -329,16 +349,24 @@ const toggleStats = (vnetId: string) => {
           <TrafficChart :vnet-id="vnet.vnetId" :title="`${vnet.comment} 流量统计`" height="250px" />
         </div>
       </template>
-    </NCard><!-- 新建/编辑虚拟网络配置窗口 -->
+    </NCard>
+
+    <!-- 新建/编辑虚拟网络配置窗口 -->
     <NModal v-model:show="showNetworkModal" :title="isEditing ? '编辑虚拟网络' : '新建虚拟网络'" preset="dialog"
       :mask-closable="false">
       <NForm ref="networkFormRef" :model="networkForm" :rules="networkFormRules" label-placement="left"
         label-width="100px">
         <NFormItem label="网络名称" path="token" required>
-          <NInput v-model:value="networkForm.token" maxlength="50" show-count clearable placeholder="需唯一且不与其他用户重复" />
+          <NInputGroup>
+            <NInput v-model:value="networkForm.token" maxlength="50" show-count clearable placeholder="需唯一且不与他人重复" />
+            <NButton @click="generateRandomToken">随机</NButton>
+          </NInputGroup>
         </NFormItem>
         <NFormItem label="网络密码" path="password" required>
-          <NInput v-model:value="networkForm.password" maxlength="50" show-count clearable placeholder="请输入密码" />
+          <NInputGroup>
+            <NInput v-model:value="networkForm.password" maxlength="50" show-count clearable placeholder="请输入密码" />
+            <NButton @click="generateRandomPassword">随机</NButton>
+          </NInputGroup>
         </NFormItem>
         <NFormItem label="备注" path="comment">
           <NInput v-model:value="networkForm.comment" placeholder="请输入备注（可选）" maxlength="100" show-count clearable />
@@ -361,7 +389,7 @@ const toggleStats = (vnetId: string) => {
         <NFormItem label="启用状态">
           <NSwitch v-model:value="networkForm.enabled" />
         </NFormItem>
-      </NForm>      <template #action>
+      </NForm> <template #action>
         <NButton type="primary" :loading="networkOperationLoading" @click="handleCreateNetwork">
           {{ networkOperationLoading ? (isEditing ? '更新中...' : '创建中...') : (isEditing ? '更新' : '确认') }}
         </NButton>

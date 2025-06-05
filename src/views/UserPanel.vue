@@ -21,10 +21,8 @@ const userInfo = ref({
 const fetchUserInfo = async () => {
   try {
     const response = await getUserInfo()
-    if (response.code === 0) {
-      userInfo.value.email = response.data.email
-      userInfo.value.username = response.data.username
-    }
+    userInfo.value.email = response.data.email
+    userInfo.value.username = response.data.username
   } catch (error) {
     console.error('获取用户信息失败:', error)
   }

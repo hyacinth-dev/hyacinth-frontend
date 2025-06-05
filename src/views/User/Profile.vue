@@ -30,28 +30,39 @@ const passwordFormValue = ref({
 const profileRules: FormRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度应在3-20个字符之间', trigger: 'blur' }
+    {
+      validator: (_rule: FormItemRule, value: string) => {
+        if (!value) return false
+        const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
+        return usernameRegex.test(value)
+      },
+      message: '请输入用户名（3-20位字母、数字或下划线）',
+      trigger: 'blur'
+    }
   ]
 }
 
 const passwordRules: FormRules = {
   currentPassword: [
-    { required: true, message: '请输入当前密码', trigger: 'blur' }
+    { required: true, message: '请输入当前密码', trigger: ['blur', 'input'] }
   ],
-  newPassword: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度应在6-20个字符之间', trigger: 'blur' }
-  ],
-  confirmPassword: [
-    { required: true, message: '请确认新密码', trigger: 'blur' },
-    {
-      validator: (_rule: FormItemRule, value: string) => {
-        return value === passwordFormValue.value.newPassword
-      },
-      message: '两次输入的密码不一致',
-      trigger: 'blur'
+  newPassword: {
+    required: true,
+    message: '请输出合法的密码（8-20位，包含字母和数字）',
+    trigger: ['blur', 'input'],
+    validator: (_rule: any, value: string) => {
+      const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)\S{8,20}$/
+      return passwordRegex.test(value)
     }
-  ]
+  },
+  confirmPassword: {
+    required: true,
+    message: '两次输入的密码不一致',
+    trigger: ['blur', 'input'],
+    validator: (_rule: any, value: string) => {
+      return (value === passwordFormValue.value.newPassword)
+    }
+  },
 }
 
 const loading = ref(false)
@@ -85,6 +96,14 @@ const handleUpdateProfile = async () => {
     message.success('个人信息更新成功')
     userInfo.value.username = profileFormValue.value.username
     userInfo.value.email = profileFormValue.value.email
+
+    // 派发自定义事件通知其他组件更新用户信息
+    window.dispatchEvent(new CustomEvent('userInfoUpdated', {
+      detail: {
+        username: profileFormValue.value.username,
+        email: profileFormValue.value.email
+      }
+    }))
   } catch (error) {
     message.error('更新失败: ' + (error as any).response.data.message || '未知错误')
     console.error('更新个人信息失败:', error)

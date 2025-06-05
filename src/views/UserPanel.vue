@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { NLayout, NLayoutContent, NLayoutSider, NMenu, NAvatar, NDropdown, NSpace } from 'naive-ui'
-import { h, ref, onMounted, watch } from 'vue'
+import { h, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { MenuOption, DropdownOption } from 'naive-ui'
 import { StatsChartOutline, SwapHorizontalOutline, CartOutline, InformationCircleOutline } from '@vicons/ionicons5'
@@ -29,6 +29,18 @@ const fetchUserInfo = async () => {
 }
 
 /**
+ * 监听用户信息更新事件
+ */
+const handleUserInfoUpdate = (event: CustomEvent) => {
+  if (event.detail && event.detail.username) {
+    userInfo.value.username = event.detail.username
+  }
+  if (event.detail && event.detail.email) {
+    userInfo.value.email = event.detail.email
+  }
+}
+
+/**
  * 组件挂载时执行的操作
  * 1. 检查用户登录状态
  * 2. 根据用户角色设置不同的导航菜单
@@ -43,6 +55,9 @@ onMounted(() => {
   }
   // 获取用户信息
   fetchUserInfo()
+
+  // 监听用户信息更新事件
+  window.addEventListener('userInfoUpdated', handleUserInfoUpdate as EventListener)
 
   // 设置普通用户菜单选项
   menuOptions = [
@@ -76,6 +91,13 @@ onMounted(() => {
     // 如果当前路由不在菜单中，设置默认值
     activeKey.value = '/user/dashboard'
   }
+})
+
+/**
+ * 组件卸载时清理事件监听器
+ */
+onUnmounted(() => {
+  window.removeEventListener('userInfoUpdated', handleUserInfoUpdate as EventListener)
 })
 
 // 导航菜单选项，将根据用户角色动态设置

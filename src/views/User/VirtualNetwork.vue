@@ -80,6 +80,7 @@ const networkForm = ref({
 // 表单验证规则
 const networkFormRules: FormRules = {
   token: {
+    key: 'token',
     required: true,
     message: '请输入名称（3-50位字母、数字或下划线）',
     trigger: ['blur', 'input'],
@@ -90,6 +91,7 @@ const networkFormRules: FormRules = {
     }
   },
   password: {
+    key: 'password',
     required: true,
     message: '请输入密码（3-50位字母、数字或下划线）',
     trigger: ['blur', 'input'],
@@ -128,10 +130,10 @@ const networkFormRules: FormRules = {
   },
   clientsLimit: {
     required: true,
-    message: '最大连接数必须是大于0的数字',
+    message: '最大连接数必须大于0且不大于用户组限制',
     trigger: ['blur', 'change'],
     validator: (_rule: any, value: number) => {
-      if (!value || value <= 0) return false
+      if (!value || value <= 0 || !Number.isSafeInteger(value)) return false
       return true
     }
   }
@@ -209,7 +211,8 @@ const handleCreateNetwork = async () => {
     const requestData: CreateVNetRequest | UpdateVNetRequest = {
       comment: networkForm.value.comment,
       token: networkForm.value.token,
-      password: networkForm.value.password, ipRange: ipRange,
+      password: networkForm.value.password,
+      ipRange: ipRange,
       enableDHCP: networkForm.value.enableDHCP,
       clientsLimit: networkForm.value.clientsLimit,
       enabled: networkForm.value.enabled
@@ -250,7 +253,8 @@ const openNetworkModal = () => {  // 重置表单
   networkForm.value = {
     comment: '',
     token: '',
-    password: '', ipAddress: '192.168.100.0',
+    password: '',
+    ipAddress: '192.168.100.0',
     cidr: 24,
     enableDHCP: true,
     clientsLimit: defaultClientsLimit,
@@ -308,23 +312,27 @@ const toggleStats = (vnetId: string) => {
 }
 
 // 生成随机字符串
-const generateRandomToken = () => {
+const generateRandomToken = async () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   let result = ''
   for (let i = 0; i < 8; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length))
   }
   networkForm.value.token = result
+
+  await networkFormRef.value?.validate((_) => { }, (rule) => { return rule?.key === 'token' })
 }
 
 // 生成随机密码
-const generateRandomPassword = () => {
+const generateRandomPassword = async () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   let result = ''
   for (let i = 0; i < 8; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length))
   }
   networkForm.value.password = result
+
+  await networkFormRef.value?.validate((_) => { }, (rule) => { return rule?.key === 'password' })
 }
 </script>
 
@@ -346,7 +354,7 @@ const generateRandomPassword = () => {
       <!-- 虚拟网络统计展示 -->
       <template v-for="vnet in vnetworks" :key="vnet.vnetId">
         <div v-if="expandedStats[vnet.vnetId]" class="vnet-stats">
-          <TrafficChart :vnet-id="vnet.vnetId" :title="`${vnet.comment} 流量统计`" height="250px" />
+          <TrafficChart :vnet-id="vnet.vnetId" :title="`${vnet.token} 流量统计`" height="250px" />
         </div>
       </template>
     </NCard>

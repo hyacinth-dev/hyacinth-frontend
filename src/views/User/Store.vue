@@ -33,7 +33,7 @@ const products = ref([
     packageType: 1, // 对应后端的普通用户
     name: '免费套餐',
     price: '免费',
-    features: ['1个虚拟网络', '最大3人同时在线', '5GB流量/月', '无技术支持'],
+    features: ['1个虚拟网络', '最大3人同时在线', '5GiB流量/月', '无技术支持'],
     popular: false,
     isFree: true
   },
@@ -42,14 +42,14 @@ const products = ref([
     packageType: 2, // 对应后端的青铜用户
     name: '青铜套餐',
     price: '￥19.99/月',
-    features: ['3个虚拟网络', '最大5人同时在线', '50GB流量/月', '基础技术支持'],
+    features: ['3个虚拟网络', '最大5人同时在线', '50GiB流量/月', '基础技术支持'],
     popular: false
   }, {
     id: 2,
     packageType: 3, // 对应后端的白银用户
     name: '白银套餐',
     price: '￥49.99/月',
-    features: ['5个虚拟网络', '最大10人同时在线', '200GB流量/月', '高级技术支持'],
+    features: ['5个虚拟网络', '最大10人同时在线', '200GiB流量/月', '高级技术支持'],
     popular: true
   },
   {
@@ -57,7 +57,7 @@ const products = ref([
     packageType: 4, // 对应后端的黄金用户
     name: '黄金套餐',
     price: '￥99.99/月',
-    features: ['10个虚拟网络', '无限制同时在线', '1TB流量/月', '优先技术支持'],
+    features: ['10个虚拟网络', '无限制同时在线', '1TiB流量/月', '优先技术支持'],
     popular: false
   }
 ])

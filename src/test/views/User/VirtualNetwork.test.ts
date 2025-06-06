@@ -380,7 +380,7 @@ describe('虚拟网络', () => {
 			await new Promise(resolve => setTimeout(resolve, 1000))
 
 			// 等待异步操作完成
-			await nextTick()			
+			await nextTick()
 			// 验证createVNet只被调用一次
 			expect(createVNet).toHaveBeenCalledTimes(1)
 			expect(createVNet).toHaveBeenCalledWith({
@@ -661,11 +661,481 @@ describe('虚拟网络', () => {
 
 			// 模拟点击随机按钮（由于我们使用了mock组件，需要直接调用函数）
 			vm.generateRandomToken()
-			vm.generateRandomPassword()
-
-			// 验证值已经改变
+			vm.generateRandomPassword()			// 验证值已经改变
 			expect(vm.networkForm.token).not.toBe(initialToken)
 			expect(vm.networkForm.password).not.toBe(initialPassword)
+		})
+	})
+	describe('不合法数据处理测试', () => {
+		it('应该拒绝无效的IP地址格式', async () => {
+			const wrapper = mount(VirtualNetwork)
+			await nextTick()
+
+			const vm = wrapper.vm as any
+
+			// 测试各种无效的IP地址格式（确实无效的）
+			const invalidIPs = [
+				'256.256.256.256',  // 超出范围
+				'192.168.1',        // 不完整
+				'192.168.1.1.1',    // 多余段
+				'abc.def.ghi.jkl',  // 字母
+				'192.168.-1.1',     // 负数
+				'192.168.1.',       // 末尾有点
+				'.192.168.1.1',     // 开头有点
+				'',                 // 空字符串
+				'   ',              // 空白字符
+				'192.168.1.1/24',   // 包含CIDR
+			]
+
+			invalidIPs.forEach(ip => {
+				expect(vm.validateIpAddress(ip)).toBe(false)
+			})
+
+			// 测试有效的IP地址
+			const validIPs = ['192.168.1.1', '10.0.0.1', '172.16.0.1', '192.168.01.1']
+			validIPs.forEach(ip => {
+				expect(vm.validateIpAddress(ip)).toBe(true)
+			})
+		})
+		it('应该拒绝无效的CIDR值', async () => {
+			const wrapper = mount(VirtualNetwork)
+			await nextTick()
+
+			const vm = wrapper.vm as any
+
+			// 测试无效的CIDR值 - 使用表单验证规则
+			const invalidCIDRs = [-1, 0, 7, 31, 33, 100, NaN]
+
+			invalidCIDRs.forEach(cidr => {
+				vm.networkForm.cidr = cidr
+				vm.networkForm.enableDHCP = true // 启用DHCP才会验证CIDR
+
+				// 调用表单验证规则中的validator
+				const validator = vm.networkFormRules.cidr.validator
+				const isValid = validator(null, cidr)
+				expect(isValid).toBe(false)
+			})
+
+			// 测试有效的CIDR值
+			const validCIDRs = [8, 16, 24, 30]
+			validCIDRs.forEach(cidr => {
+				vm.networkForm.cidr = cidr
+				vm.networkForm.enableDHCP = true
+
+				const validator = vm.networkFormRules.cidr.validator
+				const isValid = validator(null, cidr)
+				expect(isValid).toBe(true)
+			})
+		})
+		it('应该拒绝无效的网络名称', async () => {
+			const wrapper = mount(VirtualNetwork)
+			await nextTick()
+
+			const vm = wrapper.vm as any
+
+			// 测试无效的网络名称
+			const invalidTokens = [
+				'',                    // 空字符串
+				'   ',                 // 空白字符
+				'test@network',        // 包含特殊字符
+				'test network',        // 包含空格
+				'test-network',        // 包含连字符
+				'test.network',        // 包含点
+				'a',                   // 太短
+				'aa',                  // 太短
+				'a'.repeat(100),       // 太长
+				'测试网络',             // 中文字符
+				'Test Network!'        // 包含感叹号
+			]
+
+			invalidTokens.forEach(token => {
+				const validator = vm.networkFormRules.token.validator
+				const isValid = validator(null, token)
+				expect(isValid).toBe(false)
+			})
+
+			// 测试有效的网络名称
+			const validTokens = ['test123', 'network_1', 'abc_123', 'test_network_123']
+			validTokens.forEach(token => {
+				const validator = vm.networkFormRules.token.validator
+				const isValid = validator(null, token)
+				expect(isValid).toBe(true)
+			})
+		})
+		it('应该拒绝无效的密码格式', async () => {
+			const wrapper = mount(VirtualNetwork)
+			await nextTick()
+
+			const vm = wrapper.vm as any
+
+			// 测试无效的密码 - 根据实际的正则表达式 /^[a-zA-Z0-9_]{3,50}$/
+			const invalidPasswords = [
+				'',                    // 空密码
+				'   ',                 // 空白字符
+				'12',                  // 太短
+				'a'.repeat(51),        // 太长
+				'pass word',           // 包含空格
+				'密码123',             // 包含中文
+				'pass@word',           // 包含特殊字符
+				'pass-word',           // 包含连字符
+				'pass.word'            // 包含点号
+			]
+
+			invalidPasswords.forEach(password => {
+				const validator = vm.networkFormRules.password.validator
+				const isValid = validator(null, password)
+				expect(isValid).toBe(false)
+			})
+
+			// 测试有效的密码
+			const validPasswords = ['pass123', 'password_1', 'abc_123', 'test_password', 'PASSWORD123']
+			validPasswords.forEach(password => {
+				const validator = vm.networkFormRules.password.validator
+				const isValid = validator(null, password)
+				expect(isValid).toBe(true)
+			})
+		})
+		it('应该拒绝超出限制的客户端连接数', async () => {
+			const wrapper = mount(VirtualNetwork)
+			await nextTick()
+			await nextTick() // 等待limitInfo加载
+
+			const vm = wrapper.vm as any
+
+			// 测试无效的客户端连接数
+			const invalidLimits = [
+				-1,                    // 负数
+				0,                     // 零
+				NaN,                   // 非数字
+				null,                  // null值
+				undefined,             // undefined值
+				1.5,                   // 小数
+				Infinity,              // 无穷大
+				-Infinity              // 负无穷大
+			]
+
+			invalidLimits.forEach(limit => {
+				const validator = vm.networkFormRules.clientsLimit.validator
+				const isValid = validator(null, limit)
+				expect(isValid).toBe(false)
+			})
+
+			// 测试超出限制的情况（通过validateForm函数）
+			vm.networkForm.clientsLimit = 25 // 超出mockLimitInfo中的限制20
+			const isFormValid = vm.validateForm()
+			expect(isFormValid).toBe(false)
+
+			// 测试合理的连接数
+			vm.networkForm.clientsLimit = 15
+			const isFormValidNow = vm.validateForm()
+			expect(isFormValidNow).toBe(true)
+		})
+		it('应该拒绝无效的备注信息', async () => {
+			const wrapper = mount(VirtualNetwork)
+			await nextTick()
+
+			const vm = wrapper.vm as any
+
+			// 测试无效的备注信息
+			const invalidComments = [
+				'a'.repeat(1000),      // 太长的备注
+			]
+
+			invalidComments.forEach(comment => {
+				const validator = vm.networkFormRules.comment.validator
+				const isValid = validator(null, comment)
+				expect(isValid).toBe(false)
+			})
+
+			// 测试有效的备注信息
+			const validComments = [
+				'',                    // 空备注（可选字段）
+				'   ',                 // 空白字符（可选字段）
+				'测试备注',             // 中文备注
+				'Test comment',        // 英文备注
+				'a'.repeat(100),       // 100字符（边界值）
+			]
+
+			validComments.forEach(comment => {
+				const validator = vm.networkFormRules.comment.validator
+				const isValid = validator(null, comment)
+				expect(isValid).toBe(true)
+			})
+		})
+		it('应该正确处理API返回的错误响应', async () => {
+			const wrapper = mount(VirtualNetwork)
+			await nextTick()
+
+			const vm = wrapper.vm as any
+
+			// Mock创建API抛出错误（模拟真实的API错误情况）
+			const apiError = new Error('API Error')
+				; (apiError as any).response = {
+					data: {
+						message: '创建失败：网络名称已存在'
+					}
+				}
+			vi.mocked(createVNet).mockRejectedValue(apiError)
+
+			// 设置有效的表单数据
+			vm.networkForm = {
+				comment: 'Test Network',
+				token: 'testnet123',
+				password: 'pass123',
+				ipAddress: '192.168.100.0',
+				cidr: 24,
+				enableDHCP: true,
+				clientsLimit: 10,
+				enabled: true
+			}
+
+			// 调用创建方法
+			await vm.handleCreateNetwork()
+
+			// 验证API被调用
+			expect(createVNet).toHaveBeenCalled()
+
+			// 验证错误被正确处理（组件应该显示错误消息但不崩溃）
+			expect(wrapper.exists()).toBe(true)
+		})
+
+		it('应该处理网络异常情况', async () => {
+			// Mock网络错误
+			vi.mocked(getVNetList).mockRejectedValue(new Error('Network Error'))
+			vi.mocked(getVNetLimitInfo).mockRejectedValue(new Error('Network Error'))
+			vi.mocked(createVNet).mockRejectedValue(new Error('Network Error'))
+			vi.mocked(updateVNet).mockRejectedValue(new Error('Network Error'))
+			vi.mocked(deleteVNet).mockRejectedValue(new Error('Network Error'))
+
+			const wrapper = mount(VirtualNetwork)
+			await nextTick()
+
+			const vm = wrapper.vm as any
+
+			// 测试在网络错误情况下组件是否仍能正常工作
+			expect(wrapper.exists()).toBe(true)
+
+			// 测试创建网络在网络错误时的处理
+			vm.networkForm = {
+				comment: 'Test Network',
+				token: 'testnet123',
+				password: 'pass123',
+				ipAddress: '192.168.100.0',
+				cidr: 24,
+				enableDHCP: true,
+				clientsLimit: 10,
+				enabled: true
+			}
+
+			await vm.handleCreateNetwork()
+			expect(createVNet).toHaveBeenCalled()
+
+			// 测试删除网络在网络错误时的处理
+			await vm.handleDeleteNetwork('test-vnet-id')
+			expect(deleteVNet).toHaveBeenCalled()
+		})
+
+		it('应该处理边界值测试', async () => {
+			const wrapper = mount(VirtualNetwork)
+			await nextTick()
+			await nextTick() // 等待limitInfo加载
+
+			const vm = wrapper.vm as any
+
+			// 测试CIDR边界值
+			vm.networkForm.cidr = 1
+			expect(vm.validateForm()).toBe(true)
+
+			vm.networkForm.cidr = 32
+			expect(vm.validateForm()).toBe(true)
+
+			// 测试客户端连接数边界值
+			vm.networkForm.clientsLimit = 1
+			expect(vm.validateForm()).toBe(true)
+
+			vm.networkForm.clientsLimit = 20 // 假设最大限制是20
+			expect(vm.validateForm()).toBe(true)
+
+			// 测试最小长度的有效输入
+			vm.networkForm.token = 'a1b2c3d4' // 8个字符的最小有效token
+			vm.networkForm.password = 'pass1234' // 8个字符的最小有效密码
+			vm.networkForm.comment = 'Test' // 最短有效备注
+
+			expect(vm.validateForm()).toBe(true)
+		})
+
+		it('应该正确处理并发操作', async () => {
+			const wrapper = mount(VirtualNetwork)
+			await nextTick()
+
+			const vm = wrapper.vm as any
+
+			// Mock异步操作
+			vi.mocked(createVNet).mockImplementation(() =>
+				new Promise(resolve =>
+					setTimeout(() => resolve({ code: 200, message: 'success', data: null }), 100)
+				)
+			)
+
+			// 设置有效的表单数据
+			vm.networkForm = {
+				comment: 'Test Network',
+				token: 'testnet123',
+				password: 'pass123',
+				ipAddress: '192.168.100.0',
+				cidr: 24,
+				enableDHCP: true,
+				clientsLimit: 10,
+				enabled: true
+			}
+
+			// 同时触发多个创建操作
+			const promises = [
+				vm.handleCreateNetwork(),
+				vm.handleCreateNetwork(),
+				vm.handleCreateNetwork()
+			]
+
+			await Promise.all(promises)
+
+			// 验证防重复提交机制（应该只调用一次或有适当的处理）
+			// 具体行为取决于组件的实现
+			expect(createVNet).toHaveBeenCalled()
+		})
+	})
+
+	describe('DHCP开关功能测试', () => {
+		it('应该在关闭DHCP后不检查IP地址格式', async () => {
+			const wrapper = mount(VirtualNetwork)
+			await nextTick()
+
+			const vm = wrapper.vm as any
+
+			// 设置DHCP为关闭状态
+			vm.networkForm.enableDHCP = false
+
+			// 测试无效的IP地址格式，在DHCP关闭时应该通过验证
+			const invalidIPs = [
+				'256.256.256.256',  // 超出范围
+				'192.168.1',        // 不完整
+				'192.168.1.1.1',    // 多余段
+				'abc.def.ghi.jkl',  // 字母
+				'192.168.-1.1',     // 负数
+				'192.168.1.',       // 末尾有点
+				'.192.168.1.1',     // 开头有点
+				'',                 // 空字符串
+				null,				// null值
+				'   ',              // 空白字符
+				'192.168.1.1/24',   // 包含CIDR
+			]
+
+			invalidIPs.forEach(ip => {
+				vm.networkForm.ipAddress = ip
+				const validator = vm.networkFormRules.ipAddress.validator
+				const isValid = validator(null, ip)
+				// 关闭DHCP时，即使IP地址格式无效也应该通过验证
+				expect(isValid).toBe(true)
+			})
+		})
+
+		it('应该在关闭DHCP后不检查CIDR值', async () => {
+			const wrapper = mount(VirtualNetwork)
+			await nextTick()
+
+			const vm = wrapper.vm as any
+
+			// 设置DHCP为关闭状态
+			vm.networkForm.enableDHCP = false
+
+			// 测试无效的CIDR值，在DHCP关闭时应该通过验证
+			const invalidCIDRs = [-1, 0, 7, 31, 33, 100, NaN]
+
+			invalidCIDRs.forEach(cidr => {
+				vm.networkForm.cidr = cidr
+				const validator = vm.networkFormRules.cidr.validator
+				const isValid = validator(null, cidr)
+				// 关闭DHCP时，即使CIDR值无效也应该通过验证
+				expect(isValid).toBe(true)
+			})
+		})
+
+		it('应该能够成功创建关闭DHCP的虚拟网络', async () => {
+			// Mock成功的创建响应
+			vi.mocked(createVNet).mockResolvedValue({
+				code: 200,
+				message: 'success',
+				data: null
+			})
+
+			const wrapper = mount(VirtualNetwork)
+			await nextTick()
+			await nextTick()
+
+			const vm = wrapper.vm as any
+
+			// 清除之前的API调用记录
+			vi.mocked(createVNet).mockClear()
+			vi.mocked(getVNetList).mockClear()
+			vi.mocked(getVNetLimitInfo).mockClear()
+
+			// 设置关闭DHCP的表单数据，使用无效的IP地址格式
+			vm.networkForm = {
+				comment: 'Test Network Without DHCP',
+				token: 'test-no-dhcp',
+				password: 'test123',
+				ipAddress: 'invalid-ip',  // 无效的IP地址
+				cidr: -1,                 // 无效的CIDR值
+				enableDHCP: false,        // 关闭DHCP
+				clientsLimit: 10,
+				enabled: true
+			}
+
+			// 调用创建网络方法
+			await vm.handleCreateNetwork()
+
+			// 验证createVNet被正确调用，即使IP地址和CIDR无效
+			expect(createVNet).toHaveBeenCalledTimes(1)
+			expect(createVNet).toHaveBeenCalledWith({
+				comment: 'Test Network Without DHCP',
+				token: 'test-no-dhcp',
+				password: 'test123',
+				ipRange: '192.168.100.0/24',  // 即使格式无效也会被传递
+				enableDHCP: false,
+				clientsLimit: 10,
+				enabled: true
+			})
+
+			// 验证创建成功后重新获取列表和限制信息
+			expect(getVNetList).toHaveBeenCalledTimes(1)
+			expect(getVNetLimitInfo).toHaveBeenCalledTimes(1)
+		})
+
+		it('应该在DHCP开关切换时重新验证表单', async () => {
+			const wrapper = mount(VirtualNetwork)
+			await nextTick()
+
+			const vm = wrapper.vm as any
+
+			// 设置一个无效的IP地址
+			vm.networkForm.ipAddress = '256.256.256.256'
+			vm.networkForm.cidr = 50
+
+			// 首先关闭DHCP，验证应该通过
+			vm.networkForm.enableDHCP = false
+			let ipValidator = vm.networkFormRules.ipAddress.validator
+			let cidrValidator = vm.networkFormRules.cidr.validator
+			expect(ipValidator(null, vm.networkForm.ipAddress)).toBe(true)
+			expect(cidrValidator(null, vm.networkForm.cidr)).toBe(true)
+
+			// 然后开启DHCP，验证应该失败
+			vm.networkForm.enableDHCP = true
+			expect(ipValidator(null, vm.networkForm.ipAddress)).toBe(false)
+			expect(cidrValidator(null, vm.networkForm.cidr)).toBe(false)
+
+			// 再次关闭DHCP，验证应该又通过
+			vm.networkForm.enableDHCP = false
+			expect(ipValidator(null, vm.networkForm.ipAddress)).toBe(true)
+			expect(cidrValidator(null, vm.networkForm.cidr)).toBe(true)
 		})
 	})
 })

@@ -198,7 +198,9 @@ const handleCreateNetwork = async () => {
     message.error('请检查表单输入是否正确')
     networkOperationLoading.value = false // 验证失败时重置状态
     return
-  } try {
+  }
+
+  try {
     if (!validateForm()) {
       networkOperationLoading.value = false // validateForm失败时重置状态
       return

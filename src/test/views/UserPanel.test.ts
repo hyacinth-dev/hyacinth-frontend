@@ -525,4 +525,144 @@ describe('UserPanel.vue', () => {
 			expect(mockPush).toHaveBeenCalledWith('/login')
 		})
 	})
+
+	describe('用户信息更新事件处理', () => {
+		beforeEach(async () => {
+			wrapper = createWrapper()
+			await nextTick()
+		})
+
+		it('应该正确处理用户信息更新事件', async () => {
+			// 触发用户信息更新事件
+			const updateEvent = new CustomEvent('userInfoUpdated', {
+				detail: {
+					username: 'updateduser',
+					email: 'updated@example.com'
+				}
+			})
+
+			window.dispatchEvent(updateEvent)
+			await nextTick()
+			await new Promise(resolve => setTimeout(resolve, 100))
+
+			// 验证用户信息已更新
+			const vm = wrapper.vm as any
+			expect(vm.userInfo.username).toBe('updateduser')
+			expect(vm.userInfo.email).toBe('updated@example.com')
+
+			// 验证界面显示已更新
+			const username = wrapper.find('.username')
+			expect(username.text()).toBe('updateduser')
+		})
+
+		it('应该只更新事件中包含的用户信息字段', async () => {
+			// 先确保有初始用户信息
+			await new Promise(resolve => setTimeout(resolve, 100))
+			const vm = wrapper.vm as any
+			const originalEmail = vm.userInfo.email
+
+			// 只更新用户名
+			const updateEvent = new CustomEvent('userInfoUpdated', {
+				detail: {
+					username: 'newusername'
+				}
+			})
+
+			window.dispatchEvent(updateEvent)
+			await nextTick()
+
+			// 验证只有用户名被更新，邮箱保持不变
+			expect(vm.userInfo.username).toBe('newusername')
+			expect(vm.userInfo.email).toBe(originalEmail)
+		})
+
+		it('应该正确处理空的事件详情', async () => {
+			const vm = wrapper.vm as any
+			const originalUsername = vm.userInfo.username
+			const originalEmail = vm.userInfo.email
+
+			// 触发空详情的事件
+			const updateEvent = new CustomEvent('userInfoUpdated', {
+				detail: null
+			})
+
+			window.dispatchEvent(updateEvent)
+			await nextTick()
+
+			// 验证用户信息没有改变
+			expect(vm.userInfo.username).toBe(originalUsername)
+			expect(vm.userInfo.email).toBe(originalEmail)
+		})
+
+		it('应该正确处理不完整的事件详情', async () => {
+			const vm = wrapper.vm as any
+			const originalUsername = vm.userInfo.username
+			const originalEmail = vm.userInfo.email
+
+			// 触发包含无效字段的事件
+			const updateEvent = new CustomEvent('userInfoUpdated', {
+				detail: {
+					invalidField: 'invalidValue'
+				}
+			})
+
+			window.dispatchEvent(updateEvent)
+			await nextTick()
+
+			// 验证用户信息没有改变
+			expect(vm.userInfo.username).toBe(originalUsername)
+			expect(vm.userInfo.email).toBe(originalEmail)
+		})
+
+		it('应该在组件挂载时添加事件监听器', () => {
+			const addEventListenerSpy = vi.spyOn(window, 'addEventListener')
+			
+			wrapper = createWrapper()
+			
+			expect(addEventListenerSpy).toHaveBeenCalledWith('userInfoUpdated', expect.any(Function))
+			
+			addEventListenerSpy.mockRestore()
+		})
+
+		it('应该在组件卸载时移除事件监听器', () => {
+			const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener')
+			
+			wrapper = createWrapper()
+			wrapper.unmount()
+			
+			expect(removeEventListenerSpy).toHaveBeenCalledWith('userInfoUpdated', expect.any(Function))
+			
+			removeEventListenerSpy.mockRestore()
+		})
+
+		it('应该处理多次连续的用户信息更新事件', async () => {
+			const vm = wrapper.vm as any
+
+			// 第一次更新
+			let updateEvent = new CustomEvent('userInfoUpdated', {
+				detail: {
+					username: 'user1',
+					email: 'user1@example.com'
+				}
+			})
+			window.dispatchEvent(updateEvent)
+			await nextTick()
+
+			expect(vm.userInfo.username).toBe('user1')
+			expect(vm.userInfo.email).toBe('user1@example.com')
+
+			// 第二次更新
+			updateEvent = new CustomEvent('userInfoUpdated', {
+				detail: {
+					username: 'user2',
+					email: 'user2@example.com'
+				}
+			})
+			window.dispatchEvent(updateEvent)
+			await nextTick()
+
+			expect(vm.userInfo.username).toBe('user2')
+			expect(vm.userInfo.email).toBe('user2@example.com')
+		})
+	})
 })

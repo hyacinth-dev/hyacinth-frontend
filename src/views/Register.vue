@@ -57,7 +57,7 @@ const rules = {
     message: '请输出合法的密码（8-20位，包含字母和数字）',
     trigger: ['blur', 'input'],
     validator: (_rule: any, value: string) => {
-      const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)\S{8,20}$/
+      const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]{8,20}$/
       return passwordValid = passwordRegex.test(value)
     }
   },

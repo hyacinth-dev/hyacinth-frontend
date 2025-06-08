@@ -342,6 +342,7 @@ describe('Register.vue', () => {
 				expect(validator(null, '12345678')).toBe(false) // 只有数字
 				expect(validator(null, 'password')).toBe(false) // 只有字母
 				expect(validator(null, 'Pass123')).toBe(false) // 长度不够
+				expect(validator(null, '12345678a中文')).toBe(false) // 包含中文
 			})
 		})
 

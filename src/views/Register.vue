@@ -132,6 +132,7 @@ const handleRegister = async () => {
       password: formValue.value.password
     })
     message.success('注册成功')
+    localStorage.removeItem('token')
     router.push('/login')
   } catch (error) {
     console.log(error)

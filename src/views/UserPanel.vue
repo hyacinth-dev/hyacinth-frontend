@@ -3,7 +3,7 @@ import { NLayout, NLayoutContent, NLayoutSider, NMenu, NAvatar, NDropdown, NSpac
 import { h, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { MenuOption, DropdownOption } from 'naive-ui'
-import { StatsChartOutline, SwapHorizontalOutline, CartOutline, InformationCircleOutline } from '@vicons/ionicons5'
+import { StatsChartOutline, SwapHorizontalOutline, CartOutline, InformationCircleOutline, HelpCircleOutline } from '@vicons/ionicons5'
 import { getUserInfo } from '../api/auth'
 
 const router = useRouter()
@@ -58,7 +58,6 @@ onMounted(() => {
 
   // 监听用户信息更新事件
   window.addEventListener('userInfoUpdated', handleUserInfoUpdate as EventListener)
-
   // 设置普通用户菜单选项
   menuOptions = [
     {
@@ -75,6 +74,11 @@ onMounted(() => {
       label: '商城',
       key: '/user/store',
       icon: () => h(CartOutline)
+    },
+    {
+      label: '帮助文档',
+      key: 'https://hyacinth-docs.baka9.vip',
+      icon: () => h(HelpCircleOutline)
     },
     {
       label: '关于',
@@ -154,10 +158,16 @@ watch(collapsed, (newCollapsed) => {
 
 /**
  * 处理导航菜单项点击事件
- * @param key - 所选导航项的路由路径
+ * @param key - 所选导航项的路由路径或URL
  */
 const handleUpdateValue = (key: string) => {
-  router.push(key)
+  // 如果是外部链接（以 http 或 https 开头），在新标签页中打开
+  if (key.startsWith('http://') || key.startsWith('https://')) {
+    window.open(key, '_blank')
+  } else {
+    // 否则作为内部路由处理
+    router.push(key)
+  }
 }
 </script>
 
